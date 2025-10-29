@@ -1,0 +1,186 @@
+@import '@fontsource-variable/source-serif-4/index.css';
+@import '@fontsource-variable/inter/index.css';
+@import '@fontsource/monaspace-neon/400.css';
+@import '@fontsource-variable/literata/index.css';
+@import '@fontsource-variable/ibm-plex-sans/index.css';
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+@import '@fontsource-variable/dm-sans/index.css';
+@import '@fontsource-variable/fraunces/index.css';
+@import '@fontsource/jetbrains-mono/latin-400.css';
+@import '@fontsource-variable/eb-garamond/index.css';
+@import '@fontsource-variable/source-sans-3/index.css';
+@import '@fontsource/iosevka/400.css';
+@import '@fontsource/atkinson-hyperlegible/latin-400.css';
+@import '@fontsource-variable/fira-code/index.css';
+
+@layer base, theme;
+
+@layer base {
+  :root {
+    --font-body: 'Source Serif 4 Variable', 'Noto Serif', 'Noto Serif SC', 'Noto Serif JP', 'Noto Serif KR', 'Noto Serif Devanagari', serif;
+    --font-heading: 'Inter Variable', 'Noto Sans', 'Noto Sans SC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif;
+    --font-code: 'Monaspace Neon', 'JetBrains Mono', 'Fira Code', 'Noto Sans Mono', monospace;
+    --font-ui: var(--font-heading);
+    --font-editor: var(--font-body);
+    --font-size-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+    --font-size-small: clamp(0.875rem, 0.85rem + 0.2vw, 0.95rem);
+    --font-size-h1: clamp(2.2rem, 1.8rem + 1.8vw, 3.4rem);
+    --font-size-h2: clamp(1.8rem, 1.5rem + 1.2vw, 2.6rem);
+    --font-size-h3: clamp(1.5rem, 1.3rem + 0.8vw, 2rem);
+    --font-size-h4: clamp(1.25rem, 1.1rem + 0.5vw, 1.6rem);
+    --line-height-body: 1.5;
+    --line-height-heading: 1.2;
+    --font-weight-heading: 600;
+    --letter-spacing-body: 0;
+    --letter-spacing-heading: 0.01em;
+    --font-variant-body: proportional-nums oldstyle-nums;
+    --font-variant-ui: tabular-nums lining-nums;
+    --font-variant-code: lining-nums tabular-nums;
+    --font-link-underline-thickness: 0.12em;
+    --font-link-underline-offset: 0.18em;
+    --font-measure: 60ch;
+  }
+
+  :root[data-preset='editorial-classic'] {
+    --font-body: 'Source Serif 4 Variable', 'Noto Serif', 'Noto Serif SC', 'Noto Serif JP', 'Noto Serif KR', 'Noto Serif Devanagari', serif;
+    --font-heading: 'Inter Variable', 'Noto Sans', 'Noto Sans SC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif;
+    --font-code: 'Monaspace Neon', 'JetBrains Mono', 'Fira Code', 'Noto Sans Mono', monospace;
+    --font-weight-heading: 600;
+    --letter-spacing-heading: 0.008em;
+    --font-variant-body: proportional-nums oldstyle-nums;
+  }
+
+  :root[data-preset='humanist-tech'] {
+    --font-body: 'Literata Variable', 'Noto Serif', 'Noto Serif SC', 'Noto Serif JP', 'Noto Serif KR', 'Noto Serif Devanagari', serif;
+    --font-heading: 'IBM Plex Sans Variable', 'Noto Sans', 'Noto Sans SC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif;
+    --font-code: 'IBM Plex Mono', 'Noto Sans Mono', monospace;
+    --font-weight-heading: 600;
+    --letter-spacing-heading: 0.006em;
+    --font-variant-body: proportional-nums oldstyle-nums;
+  }
+
+  :root[data-preset='swiss-modern'] {
+    --font-body: 'DM Sans Variable', 'Noto Sans', 'Noto Sans SC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif;
+    --font-heading: 'DM Sans Variable', 'Noto Sans', 'Noto Sans SC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif;
+    --display-font: 'Fraunces Variable', 'Noto Serif', 'Noto Serif SC', 'Noto Serif JP', 'Noto Serif KR', 'Noto Serif Devanagari', serif;
+    --font-code: 'JetBrains Mono', 'Fira Code', 'Noto Sans Mono', monospace;
+    --font-editor: 'Source Serif 4 Variable', 'Noto Serif', 'Noto Serif SC', 'Noto Serif JP', 'Noto Serif KR', 'Noto Serif Devanagari', serif;
+    --font-weight-heading: 500;
+    --letter-spacing-heading: -0.01em;
+    --font-variant-body: proportional-nums lining-nums;
+  }
+
+  :root[data-preset='bookish-oldstyle'] {
+    --font-body: 'EB Garamond Variable', 'Noto Serif', 'Noto Serif SC', 'Noto Serif JP', 'Noto Serif KR', 'Noto Serif Devanagari', serif;
+    --font-heading: 'Source Sans 3 Variable', 'Noto Sans', 'Noto Sans SC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif;
+    --font-code: 'Iosevka', 'Fira Code', 'Noto Sans Mono', monospace;
+    --font-weight-heading: 600;
+    --letter-spacing-heading: 0.01em;
+    --font-variant-body: proportional-nums oldstyle-nums;
+  }
+
+  :root[data-preset='inclusive-readability'] {
+    --font-body: 'Atkinson Hyperlegible', 'Noto Sans', 'Noto Sans SC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif;
+    --font-heading: 'Atkinson Hyperlegible', 'Noto Sans', 'Noto Sans SC', 'Noto Sans JP', 'Noto Sans KR', 'Noto Sans Devanagari', sans-serif;
+    --font-code: 'Fira Code Variable', 'Fira Code', 'Noto Sans Mono', monospace;
+    --font-editor: 'Literata Variable', 'Noto Serif', 'Noto Serif SC', 'Noto Serif JP', 'Noto Serif KR', 'Noto Serif Devanagari', serif;
+    --font-size-body: clamp(1.05rem, 1rem + 0.35vw, 1.2rem);
+    --font-weight-heading: 600;
+    --letter-spacing-body: 0.01em;
+    --letter-spacing-heading: 0.02em;
+    --font-variant-body: proportional-nums lining-nums;
+  }
+
+  body {
+    font-family: var(--font-ui);
+    font-size: var(--font-size-body);
+    line-height: var(--line-height-body);
+    letter-spacing: var(--letter-spacing-body);
+    font-variant-numeric: var(--font-variant-body);
+    color: var(--color-text);
+    max-width: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  .markdown-body, .prose {
+    max-width: calc(var(--font-measure) * var(--editor-measure-scale));
+    margin-left: auto;
+    margin-right: auto;
+    font-family: var(--font-editor);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    line-height: var(--line-height-heading);
+    letter-spacing: var(--letter-spacing-heading);
+    font-variant-numeric: var(--font-variant-ui);
+  }
+
+  h1 { font-size: var(--font-size-h1); font-weight: var(--font-weight-heading); }
+  h2 { font-size: var(--font-size-h2); font-weight: var(--font-weight-heading); }
+  h3 { font-size: var(--font-size-h3); font-weight: calc(var(--font-weight-heading) - 50); }
+  h4 { font-size: var(--font-size-h4); font-weight: calc(var(--font-weight-heading) - 100); }
+  h5, h6 { font-size: var(--font-size-small); font-weight: calc(var(--font-weight-heading) - 100); }
+
+  [data-preset='swiss-modern'] h1,
+  [data-preset='swiss-modern'] h2 {
+    font-family: var(--display-font);
+  }
+
+  code, kbd, pre, samp {
+    font-family: var(--font-code);
+    font-variant-numeric: var(--font-variant-code);
+  }
+
+  code {
+    font-size: 0.95em;
+    letter-spacing: -0.01em;
+  }
+
+  pre code {
+    font-size: 0.95rem;
+  }
+
+  a {
+    text-decoration-thickness: var(--font-link-underline-thickness);
+    text-underline-offset: var(--font-link-underline-offset);
+  }
+
+  blockquote {
+    border-left: 0.2em solid var(--color-border);
+    padding-left: 1em;
+    font-style: italic;
+    font-size: 1.05em;
+  }
+
+  sup, sub {
+    font-size: 0.7em;
+  }
+
+  sup {
+    top: -0.4em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  sub {
+    bottom: -0.1em;
+  }
+
+  table th, table td {
+    font-variant-numeric: var(--font-variant-ui);
+  }
+
+  table th {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  ul, ol {
+    padding-left: 1.25em;
+  }
+
+  ::marker {
+    font-variant-numeric: tabular-nums;
+  }
+}
