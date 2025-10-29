@@ -1,8 +1,14 @@
 import { defineConfig } from 'vite';
 import solid from 'vite-plugin-solid';
+import packageJson from './package.json' assert { type: 'json' };
+
+const { version } = packageJson;
 
 export default defineConfig({
   plugins: [solid()],
+  define: {
+    __APP_VERSION__: JSON.stringify(version)
+  },
   server: {
     host: true,
     port: 5173

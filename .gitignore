@@ -10,4 +10,5 @@ coverage/
 playwright-report/
 version-deploy.sh
 run.sh
+Agents.local.md
 test-results/

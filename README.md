@@ -7,7 +7,7 @@ jazzbb is an offline-first markdown editor / hub that runs entirely in the brows
 - **Vault management**: open a local folder, read/write `.md` files in place, and manage notes (create, rename, delete) from the sidebar.
 - **Single-file mode**: work from a standalone scratch note, save it via the top-level Save button, and keep editing with autosave disabled for manual control.
 - **Live editor**: Single-pane TipTap / ProseMirror surface that renders Markdown inline as you type. Debounced worker parsing keeps typing responsive while the editor shows formatted content.
-- **Typography presets**: Five open-license presets (Editorial Classic, Humanist Tech, Swiss Modern + Display, Bookish Oldstyle, Inclusive Readability) accessible from the header. Each preset tunes body/headline/code families, numeral styles, spacing, and link/list treatments for a distinct editorial mood.
+- **Typography presets**: Five open-license presets (Editorial Classic, Humanist Tech, Swiss Modern + Display, Bookish Oldstyle, Inclusive Readability) accessible from the header. Presets now restyle only the editor and preview content—UI typography remains unchanged—while still tuning body/headline/code families, numeral styles, and spacing inside the document.
 - **Theme toggle**: Quick sun/moon button switches between light and night modes without refreshing.
 - **Safe rendering**: Markdown is parsed with `markdown-it`, math/task lists/footnotes are supported, and DOMPurify sanitises all HTML before display.
 - **Autosave & notices**: Vault notes auto-save after a brief pause and surface success/error toasts; scratch/single-file sessions remain manual and use the Save button.
@@ -15,7 +15,7 @@ jazzbb is an offline-first markdown editor / hub that runs entirely in the brows
 - **Inspector metadata**: Dedicated pane summarises title, last modified time, word/character/line counts, task progress, and outgoing links for the active note.
 - **Outline navigator**: Toggle a live heading tree (Ctrl/Cmd+Shift+O) to jump across sections without leaving the editor.
 - **Editable titles**: Rename vault notes (or set the first save name in scratch mode) directly from the editor header.
-- **Keyboard shortcuts**: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Esc` closes modals. Sidebar buttons mirror these actions.
+- **Keyboard shortcuts**: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Ctrl/Cmd+/` toggles the shortcut help, `Ctrl/Cmd+D` deletes the current line, and `Esc` closes modals. Sidebar buttons mirror these actions.
 
 ## Requirements
 
@@ -96,7 +96,7 @@ Use the selector in the top-right toolbar to switch between the five systems. Ea
 
 1. Run `npm install` once; reuse `node_modules/` between sessions.
 2. Make changes, then `npm run lint` and `npm run test -- --run` before finishing.
-3. Update documentation (README, agents.md) when features, shortcuts, or workflows change.
+3. Update documentation (README, Agents.md) when features, shortcuts, or workflows change.
 4. Honour the offline guarantee—no new network dependencies.
 
 ## License
