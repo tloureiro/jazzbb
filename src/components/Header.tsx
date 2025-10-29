@@ -136,7 +136,7 @@ const Header: Component = () => {
       await createNote();
     } else if ((event.metaKey || event.ctrlKey) && (event.key === '/' || event.key === '?')) {
       event.preventDefault();
-      setShowShortcuts(true);
+      setShowShortcuts((prev) => !prev);
     } else if (event.key === 'Escape') {
       setShowSearch(false);
     }
