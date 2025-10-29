@@ -8,9 +8,11 @@ import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import { Markdown } from 'tiptap-markdown';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { Extension } from '@tiptap/core';
 import { lowlight } from '../lib/syntax';
 import { editorStore } from '../state/editor';
 import EmojiSuggestionExtension from '../extensions/emojiSuggestion';
+import { deleteCurrentLine } from '../lib/editorShortcuts';
 
 type CodeEditorProps = {
   value: () => string;
@@ -61,6 +63,14 @@ export function CodeEditor(props: CodeEditorProps) {
           tightLists: true,
         }),
         EmojiSuggestionExtension,
+        Extension.create({
+          name: 'deleteLineShortcut',
+          addKeyboardShortcuts() {
+            return {
+              'Mod-d': () => deleteCurrentLine(this.editor),
+            };
+          },
+        }),
       ],
       editorProps: {
         attributes: {

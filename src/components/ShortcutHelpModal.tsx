@@ -21,6 +21,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: 'Cmd/Ctrl + /', description: 'Open this shortcuts panel' },
       { keys: 'Cmd/Ctrl + Shift + H', description: 'Toggle the top bar' },
       { keys: 'Cmd/Ctrl + Shift + O', description: 'Toggle the outline panel' },
+      { keys: 'Cmd/Ctrl + D', description: 'Delete the current line' },
       { keys: 'Escape', description: 'Close search or dismiss dialogs' },
     ],
   },

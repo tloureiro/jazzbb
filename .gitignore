@@ -8,4 +8,6 @@ yarn.lock
 dist/
 coverage/
 playwright-report/
+version-deploy.sh
+run.sh
 test-results/

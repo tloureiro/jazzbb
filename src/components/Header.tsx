@@ -17,6 +17,12 @@ import {
   toggleOutlineVisibility,
   theme,
   toggleTheme,
+  editorFontScale,
+  setEditorFontScale,
+  editorMeasureScale,
+  setEditorMeasureScale,
+  DEFAULT_EDITOR_FONT_SCALE,
+  DEFAULT_EDITOR_MEASURE_SCALE,
   isHeaderCollapsed,
   setHeaderCollapsed,
   toggleHeaderCollapsed,
@@ -31,6 +37,25 @@ const Header: Component = () => {
   const outlineVisible = isOutlineVisible;
   const currentTheme = theme;
   const headerCollapsed = isHeaderCollapsed;
+
+  const handleFontScaleInput = (event: Event) => {
+    const target = event.currentTarget as HTMLInputElement;
+    const value = Number.parseFloat(target.value);
+    if (!Number.isNaN(value)) {
+      setEditorFontScale(value);
+    }
+  };
+
+  const handleMeasureScaleInput = (event: Event) => {
+    const target = event.currentTarget as HTMLInputElement;
+    const value = Number.parseFloat(target.value);
+    if (!Number.isNaN(value)) {
+      setEditorMeasureScale(value);
+    }
+  };
+
+  const fontScalePercent = () => Math.round((editorFontScale() / DEFAULT_EDITOR_FONT_SCALE) * 100);
+  const measurePercent = () => Math.round((editorMeasureScale() / DEFAULT_EDITOR_MEASURE_SCALE) * 100);
 
   const handleOpenVault = async () => {
     if (!supportsFileSystemAccess()) {
@@ -138,11 +163,12 @@ const Header: Component = () => {
         style={{ display: headerCollapsed() ? 'none' : undefined }}
         aria-hidden={headerCollapsed() ? 'true' : 'false'}
       >
-        <div class="header-left">
-          <h1>jazzbb</h1>
-          <p class="tagline">markdown editor / hub</p>
-        </div>
-        <div class="header-actions">
+        <div class="header-row header-row-top">
+          <div class="header-left">
+            <h1>jazzbb</h1>
+            <p class="tagline">markdown editor / hub</p>
+          </div>
+          <div class="header-actions">
           <button
             type="button"
             class="secondary"
@@ -202,15 +228,6 @@ const Header: Component = () => {
           >
             Open vault
           </button>
-          <button
-            type="button"
-            class="icon-button theme-toggle"
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            title="Toggle theme"
-          >
-            {currentTheme() === 'light' ? '☀️' : '🌙'}
-          </button>
           <a
             class="icon-button github-link"
             href="https://github.com/tloureiro/jazzbb"
@@ -235,6 +252,56 @@ const Header: Component = () => {
           >
             ?
           </button>
+          <button
+            type="button"
+            class="icon-button theme-toggle"
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            title="Toggle theme"
+          >
+            {currentTheme() === 'light' ? '☀️' : '🌙'}
+          </button>
+        </div>
+        </div>
+        <div class="header-row header-row-bottom">
+          <div class="editor-controls header-controls">
+            <div class="editor-control">
+              <label class="editor-slider-label" for="editor-font-scale">
+                Font
+              </label>
+              <input
+                id="editor-font-scale"
+                type="range"
+                min="0.9"
+                max="1.8"
+                step="0.05"
+                value={editorFontScale().toString()}
+                onInput={handleFontScaleInput}
+                aria-label="Editor font size"
+              />
+              <span class="editor-slider-value" aria-hidden="true">
+                {fontScalePercent()}%
+              </span>
+            </div>
+            <div class="editor-control">
+              <label class="editor-slider-label" for="editor-measure-scale">
+                Margins
+              </label>
+              <input
+                id="editor-measure-scale"
+                type="range"
+                min="0.6"
+                max="1.4"
+                step="0.05"
+                value={editorMeasureScale().toString()}
+                onInput={handleMeasureScaleInput}
+                aria-label="Editor margins"
+              />
+              <span class="editor-slider-value" aria-hidden="true">
+                {measurePercent()}%
+              </span>
+            </div>
+          </div>
         </div>
         <button
           type="button"

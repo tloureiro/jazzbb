@@ -46,15 +46,15 @@ html, body {
   min-height: 100%;
   background: var(--color-bg);
   color: var(--color-text);
-  font-family: var(--font-ui);
-  font-size: var(--font-size-body);
-  line-height: var(--line-height-body);
-  font-variant-numeric: var(--font-variant-body);
+  font-family: var(--ui-font-base);
+  font-size: var(--ui-font-size-body);
+  line-height: var(--ui-line-height-body);
+  font-variant-numeric: proportional-nums;
   font-feature-settings: 'kern', 'liga', 'calt';
 }
 
 button, select, input, textarea {
-  font-family: var(--font-ui);
+  font-family: var(--ui-font-base);
   font-size: 0.95rem;
 }
 
@@ -65,13 +65,33 @@ button, select, input, textarea {
 }
 
 .app-header {
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 60;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 0.75rem;
   padding: 0.85rem 1.5rem;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.18);
+}
+
+.header-row {
+  display: flex;
+  width: 100%;
+}
+
+.header-row-top {
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.header-row-bottom {
+  justify-content: flex-end;
+  align-items: center;
 }
 
 .header-left h1 {
@@ -87,7 +107,11 @@ button, select, input, textarea {
 
 .header-actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
+  row-gap: 0.75rem;
 }
 
 .primary {
@@ -243,7 +267,7 @@ button, select, input, textarea {
   border-radius: 10px;
   border: 1px solid var(--color-border);
   background: var(--color-surface-strong);
-  font-family: var(--font-ui);
+  font-family: var(--ui-font-base);
   font-size: 0.85rem;
   font-weight: 600;
   min-width: 150px;
@@ -277,10 +301,10 @@ button, select, input, textarea {
   color: var(--color-text);
   border-radius: 999px;
   padding: 0.3rem 0.9rem;
-  font-family: var(--font-ui);
+  font-family: var(--ui-font-base);
   font-size: 0.8rem;
   cursor: pointer;
-  z-index: 15;
+  z-index: 70;
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
   transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
 }
@@ -303,7 +327,7 @@ button, select, input, textarea {
   color: var(--color-text);
   border-radius: var(--radius-md);
   padding: 0.4rem 0.85rem;
-  font-family: var(--font-ui);
+  font-family: var(--ui-font-base);
   font-size: 0.85rem;
   cursor: pointer;
   z-index: 8500;
@@ -506,9 +530,15 @@ button, select, input, textarea {
   display: flex;
   align-items: center;
   gap: 1rem;
-  font-family: var(--font-ui);
+  font-family: var(--ui-font-base);
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.header-controls {
+  justify-content: flex-end;
+  gap: 0.75rem;
+  width: 100%;
 }
 
 .editor-control {
@@ -805,10 +835,10 @@ button, select, input, textarea {
 }
 
 .markdown-body {
-  font-size: 0.98rem;
-  line-height: 1.65;
+  font-size: var(--editor-base-font-size);
+  line-height: var(--editor-line-height-body);
   color: var(--color-text);
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: var(--editor-letter-spacing-body);
 }
 
 .markdown-body h1,
@@ -819,7 +849,6 @@ button, select, input, textarea {
 .markdown-body h6 {
   margin-top: 1.4rem;
   margin-bottom: 0.6rem;
-  line-height: 1.2;
 }
 
 .markdown-body p {
@@ -827,7 +856,7 @@ button, select, input, textarea {
 }
 
 .markdown-body code {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', monospace;
+  font-family: var(--editor-font-code);
   background: rgba(255, 255, 255, 0.05);
   padding: 0.15rem 0.3rem;
   border-radius: 6px;
@@ -844,6 +873,18 @@ button, select, input, textarea {
 .markdown-body ol {
   padding-left: 1.4rem;
   margin: 0.6rem 0;
+}
+
+.markdown-body li > p {
+  margin: 0;
+}
+
+.markdown-body li > p:first-child {
+  margin-top: 0;
+}
+
+.markdown-body li > p:last-child {
+  margin-bottom: 0;
 }
 
 .markdown-body blockquote {
@@ -938,9 +979,10 @@ button, select, input, textarea {
   min-height: 100%;
   background: transparent;
   color: var(--color-text);
-  font-family: var(--font-editor);
-  font-size: calc(1rem * var(--editor-font-scale, 1.1));
-  line-height: 1.65;
+  font-family: var(--editor-font-body);
+  font-size: calc(var(--editor-base-font-size) * var(--editor-font-scale, 1.1));
+  line-height: var(--editor-line-height-body);
+  letter-spacing: var(--editor-letter-spacing-body);
   outline: none;
   padding: 1.25rem 1.5rem;
   width: calc(80% * var(--editor-measure-scale, 1));
@@ -958,17 +1000,8 @@ button, select, input, textarea {
 .tiptap-editor h4,
 .tiptap-editor h5,
 .tiptap-editor h6 {
-  font-weight: 700;
-  line-height: 1.2;
   margin: 1.2rem 0 0.6rem;
 }
-
-.tiptap-editor h1 { font-size: 1.8em; }
-.tiptap-editor h2 { font-size: 1.5em; }
-.tiptap-editor h3 { font-size: 1.3em; }
-.tiptap-editor h4 { font-size: 1.2em; }
-.tiptap-editor h5 { font-size: 1.1em; }
-.tiptap-editor h6 { font-size: 1em; }
 
 .tiptap-editor p {
   margin: 0.6rem 0;
@@ -983,7 +1016,7 @@ button, select, input, textarea {
 }
 
 .tiptap-editor code {
-  font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', monospace;
+  font-family: var(--editor-font-code);
   background: rgba(255, 255, 255, 0.08);
   padding: 0.15rem 0.35rem;
   border-radius: 6px;
@@ -998,6 +1031,18 @@ button, select, input, textarea {
 .tiptap-editor ol {
   margin: 0.6rem 0 0.6rem 1.4rem;
   padding: 0;
+}
+
+.tiptap-editor li > p {
+  margin: 0;
+}
+
+.tiptap-editor li > p:first-child {
+  margin-top: 0;
+}
+
+.tiptap-editor li > p:last-child {
+  margin-bottom: 0;
 }
 
 .tiptap-task-list {
@@ -1198,7 +1243,7 @@ button, select, input, textarea {
   color: var(--color-text);
   border-radius: var(--radius-md);
   padding: 0.45rem 0.75rem;
-  font-family: var(--font-ui);
+  font-family: var(--ui-font-base);
 }
 
 .header-actions .typography-select select option {

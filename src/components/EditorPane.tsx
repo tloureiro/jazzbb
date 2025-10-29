@@ -7,14 +7,6 @@ import { saveActiveNote } from '../platform/save-note';
 import { hasUnsavedChanges } from '../lib/note-stats';
 import { showToast } from '../state/ui';
 import { workspaceStore } from '../state/workspace';
-import {
-  editorFontScale,
-  setEditorFontScale,
-  editorMeasureScale,
-  setEditorMeasureScale,
-  DEFAULT_EDITOR_FONT_SCALE,
-  DEFAULT_EDITOR_MEASURE_SCALE,
-} from '../state/ui';
 import { renameNote } from '../platform/note-manager';
 import { SCRATCH_TITLE } from '../state/editor';
 
@@ -134,25 +126,6 @@ const EditorPane: Component = () => {
     clearAutosaveTimer();
   });
 
-  const handleFontScaleInput = (event: Event) => {
-    const target = event.currentTarget as HTMLInputElement;
-    const value = Number.parseFloat(target.value);
-    if (!Number.isNaN(value)) {
-      setEditorFontScale(value);
-    }
-  };
-
-  const handleMeasureScaleInput = (event: Event) => {
-    const target = event.currentTarget as HTMLInputElement;
-    const value = Number.parseFloat(target.value);
-    if (!Number.isNaN(value)) {
-      setEditorMeasureScale(value);
-    }
-  };
-
-  const fontScalePercent = () => Math.round((editorFontScale() / DEFAULT_EDITOR_FONT_SCALE) * 100);
-  const measurePercent = () => Math.round((editorMeasureScale() / DEFAULT_EDITOR_MEASURE_SCALE) * 100);
-
   const baseFileName = () => {
     const path = editorStore.activePath();
     if (!path) return '';
@@ -227,44 +200,6 @@ const EditorPane: Component = () => {
           onKeyDown={handleTitleKeydown}
           aria-label="Note title"
         />
-        <div class="editor-controls">
-          <div class="editor-control">
-            <label class="editor-slider-label" for="editor-font-scale">
-              Font
-            </label>
-            <input
-              id="editor-font-scale"
-              type="range"
-              min="0.9"
-              max="1.8"
-              step="0.05"
-              value={editorFontScale().toString()}
-              onInput={handleFontScaleInput}
-              aria-label="Editor font size"
-            />
-            <span class="editor-slider-value" aria-hidden="true">
-              {fontScalePercent()}%
-            </span>
-          </div>
-          <div class="editor-control">
-            <label class="editor-slider-label" for="editor-measure-scale">
-              Margins
-            </label>
-            <input
-              id="editor-measure-scale"
-              type="range"
-              min="0.6"
-              max="1.4"
-              step="0.05"
-              value={editorMeasureScale().toString()}
-              onInput={handleMeasureScaleInput}
-              aria-label="Editor margins"
-            />
-            <span class="editor-slider-value" aria-hidden="true">
-              {measurePercent()}%
-            </span>
-          </div>
-        </div>
       </header>
       <div class="editor-container">
         <CodeEditor value={editorStore.draft} onChange={handleChange} />
