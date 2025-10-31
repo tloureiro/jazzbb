@@ -37,6 +37,8 @@ const Header: Component = () => {
   const outlineVisible = isOutlineVisible;
   const currentTheme = theme;
   const headerCollapsed = isHeaderCollapsed;
+  const fileSystemSupported = supportsFileSystemAccess();
+  const [showUnsupportedNotice, setShowUnsupportedNotice] = createSignal(!fileSystemSupported);
 
   const handleFontScaleInput = (event: Event) => {
     const target = event.currentTarget as HTMLInputElement;
@@ -263,6 +265,21 @@ const Header: Component = () => {
           </button>
         </div>
         </div>
+        <Show when={showUnsupportedNotice()}>
+          <div class="banner banner-warning banner-dismissible" role="status">
+            <span>
+              Saving notes requires a Chromium-based browser. Open jazzbb in Chrome, Edge, or Brave to write files.
+            </span>
+            <button
+              type="button"
+              class="banner-dismiss"
+              onClick={() => setShowUnsupportedNotice(false)}
+              aria-label="Dismiss save warning"
+            >
+              Dismiss
+            </button>
+          </div>
+        </Show>
         <div class="header-row header-row-bottom">
           <div class="editor-controls header-controls">
             <div class="editor-control">

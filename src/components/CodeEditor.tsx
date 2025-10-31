@@ -1,7 +1,8 @@
 /* eslint-disable solid/reactivity */
 import { onCleanup, onMount, createEffect } from 'solid-js';
 import { Editor } from '@tiptap/core';
-import { TextSelection } from '@tiptap/pm/state';
+import { TextSelection, Plugin, PluginKey } from '@tiptap/pm/state';
+import { DOMParser as ProseMirrorDOMParser, DOMSerializer, Slice } from '@tiptap/pm/model';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Link from '@tiptap/extension-link';
@@ -11,10 +12,12 @@ import { Markdown } from 'tiptap-markdown';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { Extension } from '@tiptap/core';
 import { lowlight } from '../lib/syntax';
-import { normalizeSerializedMarkdown } from '../lib/markdown';
+import { normalizeSerializedMarkdown, renderMarkdown } from '../lib/markdown';
 import { editorStore } from '../state/editor';
 import EmojiSuggestionExtension from '../extensions/emojiSuggestion';
 import { deleteCurrentLine } from '../lib/editorShortcuts';
+import type { EditorView } from '@tiptap/pm/view';
+import type { ResolvedPos } from '@tiptap/pm/model';
 
 type CodeEditorProps = {
   value: () => string;
@@ -39,6 +42,132 @@ function readMarkdown(instance: Editor): string {
   return instance.getText({ blockSeparator: '\n' });
 }
 
+const BLOCK_MARKDOWN_PATTERN =
+  /(^|\n)\s*(#{1,6}\s|\d+\.\s|[-+*]\s+|>\s|```|~~~| {0,3}(?:\*\s*\*\s*\*|-{3,}|_{3,}))/;
+const MULTI_PARAGRAPH_PATTERN = /\n{2,}/;
+const CLIPBOARD_PARAGRAPH_SPLIT = /(?:\r\n?|\n)+/;
+
+function normalizeLineEndings(value: string): string {
+  return value.replace(/\r\n?/g, '\n');
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function looksLikeBlockMarkdown(value: string): boolean {
+  const normalized = normalizeLineEndings(value);
+  if (!normalized.includes('\n')) {
+    return false;
+  }
+  return BLOCK_MARKDOWN_PATTERN.test(normalized) || MULTI_PARAGRAPH_PATTERN.test(normalized);
+}
+
+type PasteMode = 'markdown' | 'plain-fallback' | 'single-heading' | 'html' | 'plain';
+
+function recordPasteMode(mode: PasteMode): void {
+  if (typeof window === 'undefined') return;
+  (window as typeof window & { __jazzbbLastPasteMode?: PasteMode }).__jazzbbLastPasteMode = mode;
+}
+
+function bumpPasteCount(): void {
+  if (typeof window === 'undefined') return;
+  const globalWindow = window as typeof window & { __jazzbbPasteCount?: number };
+  globalWindow.__jazzbbPasteCount = (globalWindow.__jazzbbPasteCount ?? 0) + 1;
+}
+
+const markdownPastePluginKey = new PluginKey('markdownPasteHandler');
+
+function parsePlainTextWithDefaults(view: EditorView, context: ResolvedPos, text: string): Slice {
+  const normalized = text ?? '';
+  if (!normalized) {
+    return Slice.empty;
+  }
+
+  const { schema } = view.state;
+  const parser =
+    view.someProp('clipboardParser') || view.someProp('domParser') || ProseMirrorDOMParser.fromSchema(schema);
+  const serializer = DOMSerializer.fromSchema(schema);
+  const dom = document.createElement('div');
+  const marks = context.marks();
+
+  normalized.split(CLIPBOARD_PARAGRAPH_SPLIT).forEach((block) => {
+    const paragraph = dom.appendChild(document.createElement('p'));
+    if (!block) return;
+    const textNode = schema.text(block, marks);
+    paragraph.appendChild(serializer.serializeNode(textNode));
+  });
+
+  return parser.parseSlice(dom, {
+    preserveWhitespace: true,
+    context,
+  });
+}
+
+const MarkdownPasteHandler = Extension.create({
+  name: 'markdownPasteHandler',
+  addProseMirrorPlugins() {
+    const editor = this.editor;
+    return [
+      new Plugin({
+        key: markdownPastePluginKey,
+        props: {
+          clipboardTextParser(text, context, plainText, view) {
+            bumpPasteCount();
+
+            const normalized = normalizeLineEndings(text ?? '');
+            const fallback = () => parsePlainTextWithDefaults(view, context, normalized);
+
+            if (!normalized) {
+              recordPasteMode('plain');
+              return fallback();
+            }
+
+            const isFrontMatter = normalized.startsWith('+++') || normalized.startsWith('---');
+            if (isFrontMatter) {
+              const lines = normalized.split('\n').map(escapeHtml);
+              const html = `<p>${lines.join('<br>')}</p>`;
+              const template = document.createElement('template');
+              template.innerHTML = html;
+              recordPasteMode('markdown');
+              return ProseMirrorDOMParser.fromSchema(editor.schema).parseSlice(template.content, {
+                preserveWhitespace: true,
+                context,
+              });
+            }
+
+            let rendered: string;
+            try {
+              rendered = renderMarkdown(normalized);
+            } catch (error) {
+              console.error('Failed to render pasted markdown', error);
+              recordPasteMode('plain-fallback');
+              return fallback();
+            }
+
+            const template = document.createElement('template');
+            template.innerHTML = rendered;
+
+            const slice = ProseMirrorDOMParser.fromSchema(editor.schema).parseSlice(template.content, {
+              preserveWhitespace: true,
+              context,
+            });
+
+            const blockLike = looksLikeBlockMarkdown(normalized);
+            recordPasteMode(blockLike ? 'markdown' : 'plain');
+            return slice;
+          },
+        },
+      }),
+    ];
+  },
+});
+
 export function CodeEditor(props: CodeEditorProps) {
   let containerRef!: HTMLDivElement;
   let editor: Editor | undefined;
@@ -61,6 +190,7 @@ export function CodeEditor(props: CodeEditorProps) {
         Link.configure({ openOnClick: false, autolink: true, HTMLAttributes: { rel: 'noopener noreferrer' } }),
         TaskList.configure({ HTMLAttributes: { class: 'tiptap-task-list' } }),
         TaskItem.configure({ nested: true, HTMLAttributes: { class: 'tiptap-task-item' } }),
+        MarkdownPasteHandler,
         Markdown.configure({
           html: true,
           transformPastedText: true,
@@ -155,36 +285,7 @@ export function CodeEditor(props: CodeEditorProps) {
         applyingHeadingFix = false;
       };
 
-      const handlePaste = (event: ClipboardEvent) => {
-        const clipboard = event.clipboardData;
-        if (!clipboard) return;
-        const plain = clipboard.getData('text/plain');
-        if (!plain) return;
-
-        const trimmed = plain.trim();
-        const lines = trimmed.split(/\r?\n/);
-        if (lines.length === 1) {
-          const match = trimmed.match(/^(#{1,6})\s+(.*)$/);
-          if (match) {
-            event.preventDefault();
-            const level = Math.min(match[1].length, 6);
-            const content = match[2];
-            instance
-              .chain()
-              .focus()
-              .insertContent({
-                type: 'heading',
-                attrs: { level },
-                content: content ? [{ type: 'text', text: content }] : [],
-              })
-              .run();
-            return;
-          }
-        }
-      };
-
       instance.view.dom.addEventListener('copy', handleCopy);
-      instance.view.dom.addEventListener('paste', handlePaste);
       instance.view.dom.addEventListener('input', applyHeadingFix);
       if (typeof window !== 'undefined') {
         (window as typeof window & { __tiptapEditor?: Editor }).__tiptapEditor = instance;
@@ -192,15 +293,15 @@ export function CodeEditor(props: CodeEditorProps) {
       editorStore.registerEditor(instance);
       const handleSelectionUpdate = () => editorStore.updateSelectionHeading();
       instance.on('selectionUpdate', handleSelectionUpdate);
-      instance.on('transaction', () => {
+      const handleTransaction = () => {
         handleSelectionUpdate();
         applyHeadingFix();
-      });
+      };
+      instance.on('transaction', handleTransaction);
       onCleanup(() => {
         instance.off('selectionUpdate', handleSelectionUpdate);
-        instance.off('transaction', handleSelectionUpdate);
+        instance.off('transaction', handleTransaction);
         instance.view.dom.removeEventListener('copy', handleCopy);
-        instance.view.dom.removeEventListener('paste', handlePaste);
         instance.view.dom.removeEventListener('input', applyHeadingFix);
       });
     }

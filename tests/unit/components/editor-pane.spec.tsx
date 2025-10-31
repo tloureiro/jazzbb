@@ -43,10 +43,9 @@ describe('EditorPane', () => {
   });
 
   it('shows scratch state when no note is selected', () => {
-    const { getByDisplayValue, getByLabelText } = render(() => <EditorPane />);
+    const { getByDisplayValue, getByTestId } = render(() => <EditorPane />);
     expect(getByDisplayValue('Scratch note')).toBeInTheDocument();
-    expect(getByLabelText('Editor font size')).toBeInTheDocument();
-    expect(getByLabelText('Editor margins')).toBeInTheDocument();
+    expect(getByTestId('code-editor')).toBeInTheDocument();
   });
 
   it('renders markdown output even without an active note', async () => {

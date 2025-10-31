@@ -12,6 +12,7 @@
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "test": "vitest run",
+    "test:puppeteer": "tsx tests/puppeteer/run.ts",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "check": "npm run lint && npm run test && npm run test:e2e"
@@ -71,6 +72,8 @@
     "jsdom": "^24.0.0",
     "playwright": "^1.44.0",
     "prettier": "^3.2.5",
+    "puppeteer": "^24.27.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.4.3",
     "vite": "^5.2.8",
     "vite-plugin-solid": "^2.10.1",
