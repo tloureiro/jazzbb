@@ -1,7 +1,7 @@
 # Agent Notes
 
 ## Session Rituals
-- Run `npm run lint` and `npm run test -- --run` before closing out substantive work. Vitest binds to localhost; if a sandbox blocks it, note the failure and rerun once permissions allow.
+- Run `npm run lint`, `npm run test -- --run`, and `npm run test:e2e` whenever code changes land. Vitest and Playwright bind to localhost; if a sandbox blocks them, note the failure and rerun once permissions allow.
 
 ## Project Snapshot
 - **Stack**: SolidJS + Vite + CodeMirror 6; Markdown parsing with `markdown-it` in a Web Worker; DOMPurify for sanitisation; FlexSearch worker for indexing.
@@ -11,6 +11,9 @@
 - **Outline panel**: `editorStore` now tracks heading metadata + active heading; toggle with `Ctrl/Cmd+Shift+O` or the header button to jump between sections.
 - **Theme toggle**: `toggleTheme()` flips between `light` and `dark` via the header sun/moon button; remember to update palettes in `global.css` when new surfaces appear.
 - **Title editing**: The editor header input binds to `editorStore.displayName`; blur/Enter triggers vault renames via `renameNote`, while scratch titles seed the first save filename.
+- **Browser support note**: Non-Chromium browsers surface a warning banner because they cannot save files.
+- **Test suites**: Headless Puppeteer coverage now exercises editing actions (character removal, paragraph insertion, blockquote wrapping, list nesting, task toggles, heading conversions) alongside formatting regressions (code, lists, links, images, task items). Keep specs in `tests/puppeteer/` and `tests/e2e/` in sync with new flows, favouring parser-driven helpers over brittle DOM events.
+- **Testing**: Prioritise adding or expanding Playwright/Puppeteer scenarios (alongside unit specs) whenever behaviour changes so regressions stay covered end-to-end.
 
 ## Development Guidelines
 - Single-file mode uses `workspaceStore` (`scratch`/`single`/`vault`) to route save behavior. `openSingleFile()` populates `workspaceStore.singleFile`; the first manual save in scratch invokes `showSaveFilePicker`.

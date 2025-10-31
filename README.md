@@ -16,6 +16,8 @@ jazzbb is an offline-first markdown editor / hub that runs entirely in the brows
 - **Outline navigator**: Toggle a live heading tree (Ctrl/Cmd+Shift+O) to jump across sections without leaving the editor.
 - **Editable titles**: Rename vault notes (or set the first save name in scratch mode) directly from the editor header.
 - **Keyboard shortcuts**: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Ctrl/Cmd+/` toggles the shortcut help, `Ctrl/Cmd+D` deletes the current line, and `Esc` closes modals. Sidebar buttons mirror these actions.
+- **Browser compatibility note**: Non-Chromium browsers surface a warning banner because the File System Access API is unavailable for saving.
+- **Editing coverage**: Headless Puppeteer suites exercise common authoring behaviours (character deletes, paragraph insertion, blockquote wrapping, ordered list conversion, task toggles, heading conversions). Formatting regression tests ensure Markdown constructs (headings, lists, task items, code blocks, images) render consistently.
 
 ## Requirements
 
@@ -36,6 +38,7 @@ Visit the dev server (default `http://localhost:5173`), then press **Open vault*
 
 ```bash
 npm run test -- --run   # Vitest unit tests
+npm run test:puppeteer   # Puppeteer editing/formatting scenarios
 npm run lint            # ESLint + TypeScript checks
 ```
 
