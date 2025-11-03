@@ -44,7 +44,7 @@ const Header: Component = () => {
     const target = event.currentTarget as HTMLInputElement;
     const value = Number.parseFloat(target.value);
     if (!Number.isNaN(value)) {
-      setEditorFontScale(value);
+      setEditorFontScale(value * DEFAULT_EDITOR_FONT_SCALE);
     }
   };
 
@@ -56,7 +56,8 @@ const Header: Component = () => {
     }
   };
 
-  const fontScalePercent = () => Math.round((editorFontScale() / DEFAULT_EDITOR_FONT_SCALE) * 100);
+  const fontScaleFactor = () => editorFontScale() / DEFAULT_EDITOR_FONT_SCALE;
+  const fontScalePercent = () => Math.round(fontScaleFactor() * 100);
   const measurePercent = () => Math.round((editorMeasureScale() / DEFAULT_EDITOR_MEASURE_SCALE) * 100);
 
   const handleOpenVault = async () => {
@@ -289,10 +290,10 @@ const Header: Component = () => {
               <input
                 id="editor-font-scale"
                 type="range"
-                min="0.9"
-                max="1.8"
+                min="0.5"
+                max="2"
                 step="0.05"
-                value={editorFontScale().toString()}
+                value={fontScaleFactor().toString()}
                 onInput={handleFontScaleInput}
                 aria-label="Editor font size"
               />

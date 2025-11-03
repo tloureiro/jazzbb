@@ -93,26 +93,26 @@
   .tiptap-editor h1,
   .markdown-body h1 {
     font-family: var(--editor-display-font);
-    font-size: var(--editor-font-size-h1);
+    font-size: calc(var(--editor-font-scale, 1) * var(--editor-font-size-h1));
     font-weight: var(--editor-font-weight-heading);
   }
 
   .tiptap-editor h2,
   .markdown-body h2 {
     font-family: var(--editor-display-font);
-    font-size: var(--editor-font-size-h2);
+    font-size: calc(var(--editor-font-scale, 1) * var(--editor-font-size-h2));
     font-weight: var(--editor-font-weight-heading);
   }
 
   .tiptap-editor h3,
   .markdown-body h3 {
-    font-size: var(--editor-font-size-h3);
+    font-size: calc(var(--editor-font-scale, 1) * var(--editor-font-size-h3));
     font-weight: calc(var(--editor-font-weight-heading) - 50);
   }
 
   .tiptap-editor h4,
   .markdown-body h4 {
-    font-size: var(--editor-font-size-h4);
+    font-size: calc(var(--editor-font-scale, 1) * var(--editor-font-size-h4));
     font-weight: calc(var(--editor-font-weight-heading) - 100);
   }
 
@@ -120,7 +120,7 @@
   .tiptap-editor h6,
   .markdown-body h5,
   .markdown-body h6 {
-    font-size: var(--editor-font-size-small);
+    font-size: calc(var(--editor-font-scale, 1) * var(--editor-font-size-small));
     font-weight: calc(var(--editor-font-weight-heading) - 100);
   }
 
@@ -138,13 +138,13 @@
 
   .tiptap-editor code,
   .markdown-body code {
-    font-size: 0.95em;
+    font-size: calc(var(--editor-base-font-size) * var(--editor-font-scale, 1) * 0.9);
     letter-spacing: -0.01em;
   }
 
   .tiptap-editor pre code,
   .markdown-body pre code {
-    font-size: 0.95rem;
+    font-size: calc(var(--editor-base-font-size) * var(--editor-font-scale, 1) * 0.85);
   }
 
   .tiptap-editor a,

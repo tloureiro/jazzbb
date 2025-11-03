@@ -87,7 +87,9 @@ applyEditorFontScale(editorFontScaleSignal());
 export const editorFontScale = editorFontScaleSignal;
 
 export function setEditorFontScale(scale: number): void {
-  const clamped = Math.min(Math.max(scale, 0.8), 1.6);
+  const min = DEFAULT_EDITOR_FONT_SCALE * 0.5;
+  const max = DEFAULT_EDITOR_FONT_SCALE * 2;
+  const clamped = Math.min(Math.max(scale, min), max);
   setEditorFontScaleSignal(clamped);
   applyEditorFontScale(clamped);
 }

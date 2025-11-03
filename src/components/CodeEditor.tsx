@@ -1,7 +1,7 @@
 /* eslint-disable solid/reactivity */
 import { onCleanup, onMount, createEffect } from 'solid-js';
 import { Editor } from '@tiptap/core';
-import { TextSelection, Plugin, PluginKey } from '@tiptap/pm/state';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { DOMParser as ProseMirrorDOMParser, DOMSerializer, Slice } from '@tiptap/pm/model';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -247,62 +247,16 @@ export function CodeEditor(props: CodeEditorProps) {
         clipboard.setData('text/markdown', normalized);
       };
 
-      let applyingHeadingFix = false;
-      const applyHeadingFix = () => {
-        if (applyingHeadingFix) return;
-        const { state, view } = instance;
-        const { schema } = state;
-        const replacements: Array<{ from: number; to: number; level: number; content: string }> = [];
-        state.doc.descendants((node, pos) => {
-          if (node.type !== schema.nodes.paragraph) return;
-          const text = node.textContent ?? '';
-          const match = text.match(/^(#{1,6})\s+(.*)$/);
-          if (!match) return;
-          replacements.push({
-            from: pos,
-            to: pos + node.nodeSize,
-            level: Math.min(match[1].length, 6),
-            content: match[2] ?? '',
-          });
-        });
-
-        if (replacements.length === 0) return;
-
-        let tr = state.tr;
-        for (const replacement of replacements) {
-          const headingNode = schema.nodes.heading.create(
-            { level: replacement.level },
-            replacement.content ? schema.text(replacement.content) : undefined,
-          );
-          tr = tr.replaceWith(replacement.from, replacement.to, headingNode);
-        }
-
-        const nextDoc = tr.doc;
-        const pos = Math.min(state.selection.from, nextDoc.content.size);
-        tr = tr.setSelection(TextSelection.create(nextDoc, pos));
-        applyingHeadingFix = true;
-        view.dispatch(tr);
-        applyingHeadingFix = false;
-      };
-
       instance.view.dom.addEventListener('copy', handleCopy);
-      instance.view.dom.addEventListener('input', applyHeadingFix);
       if (typeof window !== 'undefined') {
         (window as typeof window & { __tiptapEditor?: Editor }).__tiptapEditor = instance;
       }
       editorStore.registerEditor(instance);
       const handleSelectionUpdate = () => editorStore.updateSelectionHeading();
       instance.on('selectionUpdate', handleSelectionUpdate);
-      const handleTransaction = () => {
-        handleSelectionUpdate();
-        applyHeadingFix();
-      };
-      instance.on('transaction', handleTransaction);
       onCleanup(() => {
         instance.off('selectionUpdate', handleSelectionUpdate);
-        instance.off('transaction', handleTransaction);
         instance.view.dom.removeEventListener('copy', handleCopy);
-        instance.view.dom.removeEventListener('input', applyHeadingFix);
       });
     }
   });
