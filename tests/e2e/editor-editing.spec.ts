@@ -109,4 +109,18 @@ test.describe('Editing behaviour', () => {
     expect(html).toContain('<p>Line one</p>');
     expect(html).toContain('<p>Line two</p>');
   });
+
+  test('clicking container focuses editor', async ({ page }) => {
+    await page.goto('/');
+    const container = page.locator('.editor-container');
+    await container.click({ position: { x: 12, y: 12 } });
+    await page.waitForFunction(() => {
+      const active = document.activeElement;
+      return !!active && active.closest('.tiptap-editor');
+    });
+    const editor = page.locator('.tiptap-editor');
+    await page.keyboard.type('Focused via container');
+    const html = await editorHTML(editor);
+    expect(html).toContain('Focused via container');
+  });
 });

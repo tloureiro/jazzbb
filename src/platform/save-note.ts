@@ -3,7 +3,8 @@ import { vaultStore } from '../state/vault';
 import { parseNote } from './parser-service';
 import { sanitizeHtml } from '../lib/markdown';
 import { upsertDocument } from './search-service';
-import { workspaceStore } from '../state/workspace';
+import { workspaceStore, isBrowserVaultMode } from '../state/workspace';
+import { saveBrowserVaultNote } from './browser-vault-session';
 
 type SaveFilePicker = (options?: FileSavePickerOptions) => Promise<FileSystemFileHandle>;
 
@@ -87,15 +88,31 @@ export type SaveResult =
   | { status: 'unsupported' }
   | { status: 'error'; error: unknown };
 
+export type ExportResult =
+  | { status: 'exported' }
+  | { status: 'no-active' }
+  | { status: 'unsupported' }
+  | { status: 'cancelled' }
+  | { status: 'error'; error: unknown };
+
 export async function saveActiveNote(): Promise<SaveResult> {
   const path = editorStore.activePath();
   const draft = editorStore.draft();
+  const mode = workspaceStore.mode();
 
   if (!path) {
-    if (workspaceStore.mode() === 'scratch') {
+    if (mode === 'scratch') {
       return saveDraftAsNewFile(draft);
     }
     return { status: 'no-active' };
+  }
+
+  if (isBrowserVaultMode()) {
+    if (draft === editorStore.content()) {
+      return { status: 'not-changed' };
+    }
+    await saveBrowserVaultNote(path, draft);
+    return { status: 'saved' };
   }
 
   const single = workspaceStore.singleFile();
@@ -124,7 +141,7 @@ export async function saveActiveNote(): Promise<SaveResult> {
     const parsed = await parseNote(draft, { path, lastModified: Date.now() });
     const sanitized = sanitizeHtml(parsed.html);
 
-    if (workspaceStore.mode() === 'vault') {
+    if (mode === 'vault') {
       vaultStore.setCache(path, {
         html: sanitized,
         links: parsed.links,
@@ -134,7 +151,7 @@ export async function saveActiveNote(): Promise<SaveResult> {
       });
       vaultStore.updateNote({ path, title: parsed.title, lastModified: parsed.lastModified });
       await upsertDocument({ path, title: parsed.title, text: draft });
-    } else if (workspaceStore.mode() === 'single') {
+    } else if (mode === 'single') {
       workspaceStore.setSingleFile({ handle, path });
     }
 
@@ -143,9 +160,57 @@ export async function saveActiveNote(): Promise<SaveResult> {
     return { status: 'saved' };
   } catch (error) {
     console.error('Failed to save note', error);
-    if (workspaceStore.mode() === 'vault') {
+    if (mode === 'vault') {
       vaultStore.setError(`Failed to save note: ${path}`);
     }
+    return { status: 'error', error };
+  }
+}
+
+export async function exportActiveNoteToFile(): Promise<ExportResult> {
+  if (!editorStore.activePath()) {
+    return { status: 'no-active' };
+  }
+
+  const picker = (window as typeof window & {
+    showSaveFilePicker?: SaveFilePicker;
+  }).showSaveFilePicker;
+
+  if (!picker) {
+    return { status: 'unsupported' };
+  }
+
+  const draft = editorStore.draft();
+
+  try {
+    const handle = await picker({
+      suggestedName: buildSuggestedFileName(editorStore.displayName()),
+      excludeAcceptAllOption: true,
+      types: [
+        {
+          description: 'Markdown files',
+          accept: {
+            'text/markdown': ['.md'],
+            'text/plain': ['.md'],
+          },
+        },
+      ],
+    });
+
+    if (!handle) {
+      return { status: 'cancelled' };
+    }
+
+    const writable = await handle.createWritable();
+    await writable.write(draft);
+    await writable.close();
+
+    return { status: 'exported' };
+  } catch (error) {
+    if ((error as DOMException)?.name === 'AbortError') {
+      return { status: 'cancelled' };
+    }
+    console.error('Failed to export note to file', error);
     return { status: 'error', error };
   }
 }

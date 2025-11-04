@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
 
-type WorkspaceMode = 'scratch' | 'single' | 'vault';
+type WorkspaceMode = 'scratch' | 'single' | 'vault' | 'browser';
 
 type SingleFileState = {
   handle: FileSystemFileHandle;
@@ -29,6 +29,15 @@ export const workspaceStore = {
 };
 
 export function isVaultMode(): boolean {
+  const mode = workspaceStore.mode();
+  return mode === 'vault' || mode === 'browser';
+}
+
+export function isBrowserVaultMode(): boolean {
+  return workspaceStore.mode() === 'browser';
+}
+
+export function isFileSystemVaultMode(): boolean {
   return workspaceStore.mode() === 'vault';
 }
 

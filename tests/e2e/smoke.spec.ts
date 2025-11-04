@@ -1,4 +1,21 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+async function simulatePlainPaste(page: Page, text: string) {
+  await page.waitForFunction(() => Boolean(document.querySelector('.tiptap-editor')));
+  await page.evaluate((value) => {
+    const editor = document.querySelector('.tiptap-editor');
+    if (!(editor instanceof HTMLElement)) {
+      throw new Error('Editor element not found');
+    }
+    const data = new DataTransfer();
+    data.setData('text/plain', value);
+    const event = new ClipboardEvent('paste', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'clipboardData', {
+      value: data,
+    });
+    editor.dispatchEvent(event);
+  }, text);
+}
 
 test.describe('App shell', () => {
   test('loads landing shell offline', async ({ page }) => {
@@ -14,34 +31,7 @@ test.describe('App shell', () => {
     await page.keyboard.press('Delete');
 
     const snippet = "+++\ndate = '2025-10-29T00:01:01-04:00'\ndraft = true\ntitle = 'First'\n+++\n\n### This is going to be the first";
-    await page.waitForFunction(() => Boolean((window as typeof window & { __tiptapEditor?: unknown }).__tiptapEditor));
-
-    await page.evaluate((text) => {
-      const runtimeWindow = window as typeof window & {
-        __tiptapEditor?: {
-          chain: () => {
-            focus: () => {
-              deleteSelection: () => {
-                insertContent: (content: unknown) => { run: () => boolean };
-              };
-            };
-          };
-          storage: { markdown?: { parser?: { parse: (value: string, options?: { inline?: boolean }) => string } } };
-        };
-      };
-      const instance = runtimeWindow.__tiptapEditor;
-      if (!instance) {
-        throw new Error('Editor instance not available');
-      }
-      const normalized = text.replace(/\r\n?/g, '\n');
-      const rendered = instance.storage.markdown?.parser?.parse(normalized, { inline: false }) ?? normalized;
-      instance
-        .chain()
-        .focus()
-        .deleteSelection()
-        .insertContent(rendered)
-        .run();
-    }, snippet);
+    await simulatePlainPaste(page, snippet);
     await page.keyboard.press('Control+A');
 
     const html = await editor.evaluate((node) => node.innerHTML);
@@ -61,7 +51,7 @@ test.describe('App shell', () => {
     await page.keyboard.press('Control+A');
     await page.keyboard.press('Delete');
 
-    await page.keyboard.insertText('### This is going to be the first');
+    await simulatePlainPaste(page, '### This is going to be the first');
 
     const html = await editor.evaluate((node) => node.innerHTML);
     expect(html).toContain('<h3>');

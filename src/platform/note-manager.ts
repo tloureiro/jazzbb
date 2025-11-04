@@ -4,8 +4,15 @@ import { parseNote } from './parser-service';
 import { sanitizeHtml } from '../lib/markdown';
 import { upsertDocument, removeDocument } from './search-service';
 import { openNote } from './note-reader';
+import { workspaceStore, isBrowserVaultMode } from '../state/workspace';
+import {
+  convertScratchToBrowserVault,
+  createBrowserVaultNote,
+  deleteBrowserVaultNote,
+  renameBrowserVaultNote,
+} from './browser-vault-session';
 
-const DEFAULT_CONTENT = '# New Note\n';
+const DEFAULT_CONTENT = '';
 
 async function ensureUniqueName(dir: FileSystemDirectoryHandle, base: string): Promise<string> {
   const dot = base.lastIndexOf('.');
@@ -33,6 +40,16 @@ export type CreateNoteResult =
   | { status: 'error'; error: unknown };
 
 export async function createNote(initialContent: string = DEFAULT_CONTENT): Promise<CreateNoteResult> {
+  if (workspaceStore.mode() === 'scratch') {
+    const path = await convertScratchToBrowserVault(initialContent);
+    return { status: 'created', path };
+  }
+
+  if (isBrowserVaultMode()) {
+    const path = await createBrowserVaultNote(initialContent);
+    return { status: 'created', path };
+  }
+
   const vaultHandle = vaultStore.state.handle?.directoryHandle;
   if (!vaultHandle) {
     return { status: 'no-vault' };
@@ -83,6 +100,17 @@ export type RenameNoteResult =
 export async function renameNote(path: string | undefined, desiredName: string): Promise<RenameNoteResult> {
   if (!path) {
     return { status: 'no-path' };
+  }
+
+  if (isBrowserVaultMode()) {
+    const result = await renameBrowserVaultNote(path, desiredName);
+    if (result.status === 'duplicate') {
+      return { status: 'duplicate' };
+    }
+    if (result.status === 'renamed') {
+      return { status: 'renamed', path: result.path ?? path };
+    }
+    return { status: 'error', error: new Error('Failed to rename browser vault note') };
   }
 
   const dir = vaultStore.state.handle?.directoryHandle;
@@ -166,6 +194,14 @@ export type DeleteNoteResult =
 export async function deleteNote(path: string | undefined): Promise<DeleteNoteResult> {
   if (!path) {
     return { status: 'no-path' };
+  }
+
+  if (isBrowserVaultMode()) {
+    const next = await deleteBrowserVaultNote(path);
+    if (next) {
+      return { status: 'deleted', nextSelection: next };
+    }
+    return { status: 'deleted' };
   }
 
   const dir = vaultStore.state.handle?.directoryHandle;

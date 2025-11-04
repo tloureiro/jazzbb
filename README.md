@@ -5,17 +5,18 @@ jazzbb is an offline-first markdown editor / hub that runs entirely in the brows
 ## Features
 
 - **Vault management**: open a local folder, read/write `.md` files in place, and manage notes (create, rename, delete) from the sidebar.
-- **Single-file mode**: work from a standalone scratch note, save it via the top-level Save button, and keep editing with autosave disabled for manual control.
+- **Single-file mode**: work from a standalone scratch note, then use the header save controls to either store it in the browser vault or write it to disk—with autosave staying off for manual control.
 - **Live editor**: Single-pane TipTap / ProseMirror surface that renders Markdown inline as you type. Debounced worker parsing keeps typing responsive while the editor shows formatted content.
 - **Typography presets**: Five open-license presets (Editorial Classic, Humanist Tech, Swiss Modern + Display, Bookish Oldstyle, Inclusive Readability) accessible from the header. Presets now restyle only the editor and preview content—UI typography remains unchanged—while still tuning body/headline/code families, numeral styles, and spacing inside the document.
 - **Theme toggle**: Quick sun/moon button switches between light and night modes without refreshing.
 - **Safe rendering**: Markdown is parsed with `markdown-it`, math/task lists/footnotes are supported, and DOMPurify sanitises all HTML before display.
-- **Autosave & notices**: Vault notes auto-save after a brief pause and surface success/error toasts; scratch/single-file sessions remain manual and use the Save button.
+- **Autosave & notices**: Vault notes auto-save after a brief pause and surface success/error toasts; scratch/single-file sessions remain manual and use the Save to file action.
 - **Indexed search**: Worker-backed FlexSearch index updates on load/save, keyboard-friendly overlay (Ctrl/Cmd+P) with highlighted snippets, arrow navigation, and instant note opening.
 - **Inspector metadata**: Dedicated pane summarises title, last modified time, word/character/line counts, task progress, and outgoing links for the active note.
 - **Outline navigator**: Toggle a live heading tree (Ctrl/Cmd+Shift+O) to jump across sections without leaving the editor.
-- **Editable titles**: Rename vault notes (or set the first save name in scratch mode) directly from the editor header.
-- **Keyboard shortcuts**: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Ctrl/Cmd+/` toggles the shortcut help, `Ctrl/Cmd+D` deletes the current line, and `Esc` closes modals. Sidebar buttons mirror these actions.
+- **Editable titles**: Rename vault notes in the editor header or inline in the sidebar (double-click a note to edit). Names now preserve spacing/casing in browser vault and single-file modes.
+- **Keyboard shortcuts**: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Ctrl/Cmd+/` toggles the shortcut help, `Ctrl/Cmd+D` deletes the current line, `Ctrl/Cmd+Shift+H` collapses the top bar, `Ctrl/Cmd+Shift+B` collapses the vault sidebar, and `Esc` closes modals. Sidebar buttons mirror these actions.
+- **Browser vault**: Seamlessly graduate from a scratch note into an IndexedDB-backed vault, keep notes/config offline, export/import the entire vault as a `.zip`, and save individual notes to disk without leaving the browser vault.
 - **Browser compatibility note**: Non-Chromium browsers surface a warning banner because the File System Access API is unavailable for saving.
 - **Editing coverage**: Headless Puppeteer suites exercise common authoring behaviours (character deletes, paragraph insertion, blockquote wrapping, ordered list conversion, task toggles, heading conversions). Formatting regression tests ensure Markdown constructs (headings, lists, task items, code blocks, images) render consistently.
 
@@ -33,6 +34,14 @@ npm run dev
 ```
 
 Visit the dev server (default `http://localhost:5173`), then press **Open vault** to pick a local folder. The browser will request permission to read/write files in that directory.
+
+### Browser vault mode
+
+- Start in scratch, press **Save to browser** to capture the current draft in IndexedDB, or hit **New** (or `Cmd/Ctrl+N`) to spin up an additional note inside the browser vault.
+- While browsing an in-browser vault, use **Save to browser** to persist edits and **Save to file** to export the active note without switching modes.
+- The header badge indicates the active workspace (`Browser vault`, `File vault`, or `Single file`).
+- Export the current browser vault as a `.zip`, import an archived vault, or reset/delete it from the help panel (`?` button).
+- Hit the app with `?empty`, `?e`, or `?default` to load the default scratch workspace without restoring stored data. Notes/configs persist for the next normal load.
 
 ### Running Tests & Linting
 
@@ -63,7 +72,7 @@ Use the selector in the top-right toolbar to switch between the five systems. Ea
 ### Single-file workflow
 
 1. Launch jazzbb and start typing in the scratch editor.
-2. Press **Save** – the browser will prompt you to choose a destination (`showSaveFilePicker`).
+2. Press **Save to file** – the browser will prompt you to choose a destination (`showSaveFilePicker`).
 3. Once saved, the app switches into *single-file* mode: the sidebar indicates the file name, autosave stays off, and subsequent saves write back to the same handle.
 4. Use **Open file** in the header to reopen an existing markdown file without mounting an entire vault.
 
@@ -72,6 +81,7 @@ Use the selector in the top-right toolbar to switch between the five systems. Ea
 
 - Markdown parsing & search run in Web Workers. When adding new worker APIs, extend the wrappers in `src/platform/` and provide unit tests.
 - All file mutations should go through `note-manager` helpers (`createNote`, `renameNote`, `deleteNote`, `saveActiveNote`) to keep store caches and the search index in sync.
+- Browser vault storage lives in IndexedDB (`browser-vault-session`). Remember to persist settings via `updateBrowserVaultSettings` when introducing new editor/UI preferences.
 - Keep accessibility in mind: keyboard interactions for search/editor/sidebar should remain functional after changes.
 - Sanitise any new HTML rendering points with DOMPurify.
 - Autosave currently runs only in vault mode; single-file workflow is manual.
@@ -84,6 +94,8 @@ Use the selector in the top-right toolbar to switch between the five systems. Ea
 | `Ctrl/Cmd + S`      | Save active note   |
 | `Ctrl/Cmd + P`      | Open search overlay|
 | `Ctrl/Cmd + Shift + O` | Toggle outline panel|
+| `Ctrl/Cmd + Shift + H` | Collapse/expand top bar |
+| `Ctrl/Cmd + Shift + B` | Collapse/expand vault sidebar |
 | `Enter` (title field) | Commit header rename |
 | `Esc`               | Close search/overlay|
 

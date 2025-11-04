@@ -3,13 +3,10 @@ import { createSignal } from 'solid-js';
 export type ThemeMode = 'light' | 'dark' | 'system';
 
 export const [theme, setTheme] = createSignal<ThemeMode>('dark');
-export const [isSidebarOpen, setSidebarOpen] = createSignal(true);
 export const [isZenMode, setZenMode] = createSignal(false);
 const [isHeaderCollapsedSignal, setHeaderCollapsedSignal] = createSignal(false);
-
-export function toggleSidebar(): void {
-  setSidebarOpen((prev) => !prev);
-}
+const [isSidebarCollapsedSignal, setSidebarCollapsedSignal] = createSignal(false);
+const [sidebarHoverSignal, setSidebarHoverSignal] = createSignal(false);
 
 export function toggleZen(): void {
   setZenMode((prev) => !prev);
@@ -41,6 +38,13 @@ function applyTheme(mode: ThemeMode) {
 
 applyTheme(theme());
 
+export function setThemeMode(mode: ThemeMode): void {
+  setTheme(() => {
+    applyTheme(mode);
+    return mode;
+  });
+}
+
 export const typographyPreset = typographyPresetSignal;
 
 function applyHeaderCollapsed(collapsed: boolean) {
@@ -62,6 +66,64 @@ export function toggleHeaderCollapsed(): void {
   setHeaderCollapsedSignal((prev) => {
     const next = !prev;
     applyHeaderCollapsed(next);
+    return next;
+  });
+}
+
+function applySidebarCollapsed(collapsed: boolean) {
+  if (typeof document !== 'undefined' && document.documentElement) {
+    const root = document.documentElement;
+    if (collapsed) {
+      const editorHeader = root.querySelector('.editor-pane .pane-header');
+      if (editorHeader instanceof HTMLElement) {
+        const rect = editorHeader.getBoundingClientRect();
+        root.style.setProperty('--sidebar-expand-top', `${rect.top}px`);
+      } else {
+        root.style.setProperty('--sidebar-expand-top', '200px');
+      }
+    } else {
+      const sidebarHeader = root.querySelector('.sidebar-header');
+      if (sidebarHeader instanceof HTMLElement) {
+        const rect = sidebarHeader.getBoundingClientRect();
+        root.style.setProperty('--sidebar-expand-top', `${rect.top}px`);
+      } else {
+        root.style.removeProperty('--sidebar-expand-top');
+      }
+    }
+    root.dataset.sidebarCollapsed = collapsed ? 'true' : 'false';
+  }
+}
+
+applySidebarCollapsed(isSidebarCollapsedSignal());
+
+export const isSidebarCollapsed = isSidebarCollapsedSignal;
+
+function applySidebarHover(state: boolean) {
+  if (typeof document !== 'undefined' && document.documentElement) {
+    document.documentElement.dataset.sidebarHover = state ? 'true' : 'false';
+  }
+}
+
+applySidebarHover(sidebarHoverSignal());
+
+export const isSidebarHoverVisible = sidebarHoverSignal;
+
+export function setSidebarHoverVisible(value: boolean): void {
+  setSidebarHoverSignal(value);
+  applySidebarHover(value);
+}
+
+export function setSidebarCollapsed(collapsed: boolean): void {
+  setSidebarCollapsedSignal(collapsed);
+  applySidebarCollapsed(collapsed);
+  setSidebarHoverVisible(false);
+}
+
+export function toggleSidebarCollapsed(): void {
+  setSidebarCollapsedSignal((prev) => {
+    const next = !prev;
+    applySidebarCollapsed(next);
+    setSidebarHoverVisible(false);
     return next;
   });
 }

@@ -1,7 +1,7 @@
-import { Component, Show, createEffect, createSignal, onCleanup, onMount } from 'solid-js';
+import { Component, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import { supportsFileSystemAccess, requestVault } from '../platform/fs';
 import { loadVaultContents } from '../platform/vault-loader';
-import { saveActiveNote } from '../platform/save-note';
+import { saveActiveNote, exportActiveNoteToFile } from '../platform/save-note';
 import { editorStore } from '../state/editor';
 import { vaultStore } from '../state/vault';
 import SearchPanel from './SearchPanel';
@@ -26,10 +26,24 @@ import {
   isHeaderCollapsed,
   setHeaderCollapsed,
   toggleHeaderCollapsed,
+  toggleSidebarCollapsed,
 } from '../state/ui';
 import { openSingleFile } from '../platform/open-file';
-import { workspaceStore, isVaultMode } from '../state/workspace';
+import { workspaceStore, isVaultMode, isBrowserVaultMode } from '../state/workspace';
 import ShortcutHelpModal from './ShortcutHelpModal';
+import {
+  exportBrowserVault,
+  importBrowserVault,
+  deleteBrowserVault,
+  resetBrowserVaultConfig,
+  updateBrowserVaultSettings,
+  saveScratchToBrowserVault,
+} from '../platform/browser-vault-session';
+import {
+  subscribeBrowserVaultEstimate,
+  refreshBrowserVaultEstimate,
+  type StorageEstimate,
+} from '../platform/browser-vault-storage';
 
 const Header: Component = () => {
   const [showSearch, setShowSearch] = createSignal(false);
@@ -39,12 +53,67 @@ const Header: Component = () => {
   const headerCollapsed = isHeaderCollapsed;
   const fileSystemSupported = supportsFileSystemAccess();
   const [showUnsupportedNotice, setShowUnsupportedNotice] = createSignal(!fileSystemSupported);
+  const [storageEstimate, setStorageEstimate] = createSignal<StorageEstimate | null>(null);
+  const [storageDismissed, setStorageDismissed] = createSignal(false);
+  const isScratchMode = createMemo(() => workspaceStore.mode() === 'scratch');
+  const isBrowserMode = createMemo(() => workspaceStore.mode() === 'browser');
+  const canSave = createMemo(() => {
+    const mode = workspaceStore.mode();
+    if (mode === 'scratch') {
+      return true;
+    }
+    if (!editorStore.activePath()) {
+      return false;
+    }
+    if (mode === 'vault' && vaultStore.isLoading()) {
+      return false;
+    }
+    return true;
+  });
+  const saveButtonLabel = createMemo(() => {
+    if (isScratchMode()) return 'Save to file';
+    if (isBrowserMode()) return 'Save to browser';
+    return 'Save';
+  });
+  let importInputRef: HTMLInputElement | undefined;
+
+  const persistBrowserSettings = () => {
+    if (!isBrowserVaultMode()) return;
+    updateBrowserVaultSettings({
+      theme: currentTheme(),
+      typographyPreset: typographyPreset(),
+      fontScale: editorFontScale(),
+      measureScale: editorMeasureScale(),
+    }).catch((error) => {
+      console.error('Failed to persist browser vault settings', error);
+    });
+  };
+
+  const showQuotaWarning = createMemo(() => {
+    const estimate = storageEstimate();
+    if (!estimate || storageDismissed()) {
+      return false;
+    }
+    if (estimate.quota <= 0) {
+      return false;
+    }
+    return estimate.usage / estimate.quota >= 0.75;
+  });
+
+  const quotaUsagePercent = createMemo(() => {
+    const estimate = storageEstimate();
+    if (!estimate || estimate.quota <= 0) {
+      return 0;
+    }
+    return Math.min(100, Math.round((estimate.usage / estimate.quota) * 100));
+  });
 
   const handleFontScaleInput = (event: Event) => {
     const target = event.currentTarget as HTMLInputElement;
     const value = Number.parseFloat(target.value);
     if (!Number.isNaN(value)) {
       setEditorFontScale(value * DEFAULT_EDITOR_FONT_SCALE);
+      persistBrowserSettings();
     }
   };
 
@@ -53,6 +122,7 @@ const Header: Component = () => {
     const value = Number.parseFloat(target.value);
     if (!Number.isNaN(value)) {
       setEditorMeasureScale(value);
+      persistBrowserSettings();
     }
   };
 
@@ -84,6 +154,12 @@ const Header: Component = () => {
   const handlePresetChange = (event: Event) => {
     const target = event.currentTarget as HTMLSelectElement;
     setTypographyPreset(target.value as TypographyPreset);
+    persistBrowserSettings();
+  };
+
+  const handleToggleTheme = () => {
+    toggleTheme();
+    persistBrowserSettings();
   };
 
   const handleOpenFile = async () => {
@@ -93,6 +169,92 @@ const Header: Component = () => {
     } else if (result.status === 'success') {
       showToast('Opened file', 'success');
     }
+  };
+
+  const handleExportVault = async () => {
+    if (!isBrowserVaultMode()) {
+      showToast('Export is available only in browser vault mode.', 'info');
+      return;
+    }
+    try {
+      const data = await exportBrowserVault();
+      const arrayBuffer =
+        data.byteOffset === 0 && data.byteLength === data.buffer.byteLength
+          ? (data.buffer as ArrayBuffer)
+          : (data.slice().buffer as ArrayBuffer);
+      const blob = new Blob([arrayBuffer], { type: 'application/zip' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'jazzbb-browser-vault.zip';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      showToast('Vault exported', 'success');
+    } catch (error) {
+      console.error('Failed to export browser vault', error);
+      showToast('Failed to export vault', 'error');
+    }
+  };
+
+  const handleImportVault = () => {
+    if (!isBrowserVaultMode()) {
+      showToast('Import is available only in browser vault mode.', 'info');
+      return;
+    }
+    importInputRef?.click();
+  };
+
+  const handleImportFileSelection = async (event: Event) => {
+    const target = event.currentTarget as HTMLInputElement;
+    const file = target.files?.[0];
+    if (target) {
+      target.value = '';
+    }
+    if (!file) return;
+    const confirmed = window.confirm('Importing a vault replaces the current browser vault. Continue?');
+    if (!confirmed) return;
+
+    try {
+      const buffer = await file.arrayBuffer();
+      await importBrowserVault(new Uint8Array(buffer));
+      showToast('Vault imported', 'success');
+    } catch (error) {
+      console.error('Failed to import browser vault', error);
+      showToast('Failed to import vault', 'error');
+    }
+  };
+
+  const handleDeleteBrowserVault = async () => {
+    if (!isBrowserVaultMode()) return;
+    const confirmed = window.confirm('Delete the current browser vault? This cannot be undone.');
+    if (!confirmed) return;
+    try {
+      await deleteBrowserVault();
+      showToast('Browser vault deleted', 'success');
+    } catch (error) {
+      console.error('Failed to delete browser vault', error);
+      showToast('Failed to delete browser vault', 'error');
+    }
+  };
+
+  const handleResetBrowserConfig = async () => {
+    if (!isBrowserVaultMode()) return;
+    const confirmed = window.confirm('Reset browser vault settings to defaults?');
+    if (!confirmed) return;
+    try {
+      await resetBrowserVaultConfig();
+      persistBrowserSettings();
+      showToast('Browser settings reset', 'success');
+    } catch (error) {
+      console.error('Failed to reset browser vault settings', error);
+      showToast('Failed to reset settings', 'error');
+    }
+  };
+
+  const dismissQuotaWarning = () => {
+    setStorageDismissed(true);
   };
 
   const handleSave = async () => {
@@ -112,6 +274,35 @@ const Header: Component = () => {
     }
   };
 
+  const handleSaveToBrowserVault = async () => {
+    if (workspaceStore.mode() !== 'scratch') {
+      await handleSave();
+      return;
+    }
+    const result = await saveScratchToBrowserVault();
+    if (result.status === 'saved') {
+      showToast('Saved to browser vault', 'success');
+      persistBrowserSettings();
+    } else {
+      showToast('Failed to save note to browser vault', 'error');
+    }
+  };
+
+  const handleExportNoteToFile = async () => {
+    const result = await exportActiveNoteToFile();
+    if (result.status === 'exported') {
+      showToast('Saved note to file', 'success');
+    } else if (result.status === 'no-active') {
+      showToast('Select a note to export', 'info');
+    } else if (result.status === 'unsupported') {
+      showToast('File picker not supported in this browser.', 'error');
+    } else if (result.status === 'cancelled') {
+      showToast('Export cancelled', 'info');
+    } else if (result.status === 'error') {
+      showToast('Failed to save note to file', 'error');
+    }
+  };
+
   const toggleSearch = () => {
     setShowSearch((prev) => !prev);
   };
@@ -120,6 +311,13 @@ const Header: Component = () => {
     if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'h') {
       event.preventDefault();
       toggleHeaderCollapsed();
+      return;
+    }
+
+    if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'b') {
+      if (!isVaultMode()) return;
+      event.preventDefault();
+      toggleSidebarCollapsed();
       return;
     }
 
@@ -147,10 +345,22 @@ const Header: Component = () => {
 
   onMount(() => {
     window.addEventListener('keydown', handleKeydown);
-  });
-
-  onCleanup(() => {
-    window.removeEventListener('keydown', handleKeydown);
+    const unsubscribe = subscribeBrowserVaultEstimate((estimate) => {
+      if (!estimate) {
+        setStorageEstimate(null);
+        setStorageDismissed(false);
+        return;
+      }
+      setStorageEstimate(estimate);
+      if (estimate.quota > 0 && estimate.usage / estimate.quota < 0.75) {
+        setStorageDismissed(false);
+      }
+    });
+    void refreshBrowserVaultEstimate();
+    onCleanup(() => {
+      unsubscribe();
+      window.removeEventListener('keydown', handleKeydown);
+    });
   });
 
   createEffect(() => {
@@ -159,8 +369,41 @@ const Header: Component = () => {
     }
   });
 
+  const helpFooter = () => (
+    <Show when={isBrowserVaultMode()}>
+      <div class="help-actions">
+        <p class="help-actions__title">Browser vault</p>
+        <div class="help-actions__row">
+          <button type="button" onClick={handleExportVault} data-test="browser-vault-export">
+            Export (.zip)
+          </button>
+          <button type="button" onClick={handleImportVault} data-test="browser-vault-import">
+            Import (.zip)
+          </button>
+        </div>
+        <div class="help-actions__row">
+          <button type="button" class="danger" onClick={handleDeleteBrowserVault} data-test="browser-vault-delete">
+            Delete browser vault
+          </button>
+          <button type="button" class="danger" onClick={handleResetBrowserConfig} data-test="browser-config-reset">
+            Reset settings
+          </button>
+        </div>
+      </div>
+    </Show>
+  );
+
   return (
     <>
+      <input
+        type="file"
+        accept=".zip"
+        style={{ display: 'none' }}
+        ref={(element) => {
+          importInputRef = element ?? undefined;
+        }}
+        onChange={handleImportFileSelection}
+      />
       <header
         class="app-header"
         style={{ display: headerCollapsed() ? 'none' : undefined }}
@@ -176,18 +419,36 @@ const Header: Component = () => {
             type="button"
             class="secondary"
             onClick={async () => createNote()}
-            disabled={!isVaultMode()}
+            disabled={workspaceStore.mode() === 'single' || vaultStore.isLoading()}
+            data-test="header-new-note"
           >
             New
           </button>
+          <Show when={isScratchMode()}>
+            <button type="button" class="secondary" onClick={handleSaveToBrowserVault} data-test="header-save-browser">
+              Save to browser
+            </button>
+          </Show>
           <button
             type="button"
             class="secondary"
             onClick={handleSave}
-            disabled={workspaceStore.mode() === 'vault' && (!editorStore.activePath() || vaultStore.isLoading())}
+            disabled={!canSave()}
+            data-test="header-save-file"
           >
-            Save
+            {saveButtonLabel()}
           </button>
+          <Show when={isBrowserMode()}>
+            <button
+              type="button"
+              class="secondary"
+              onClick={handleExportNoteToFile}
+              disabled={!editorStore.activePath() || vaultStore.isLoading()}
+              data-test="header-export-note"
+            >
+              Save to file
+            </button>
+          </Show>
           <button type="button" class="secondary" onClick={toggleSearch} disabled={!isVaultMode()}>
             Search
           </button>
@@ -252,15 +513,17 @@ const Header: Component = () => {
             onClick={() => setShowShortcuts(true)}
             aria-label="Keyboard shortcuts"
             title="Keyboard shortcuts (Cmd/Ctrl + /)"
+            data-test="header-help-toggle"
           >
             ?
           </button>
           <button
             type="button"
             class="icon-button theme-toggle"
-            onClick={toggleTheme}
+            onClick={handleToggleTheme}
             aria-label="Toggle theme"
             title="Toggle theme"
+            data-test="theme-toggle"
           >
             {currentTheme() === 'light' ? '☀️' : '🌙'}
           </button>
@@ -276,6 +539,22 @@ const Header: Component = () => {
               class="banner-dismiss"
               onClick={() => setShowUnsupportedNotice(false)}
               aria-label="Dismiss save warning"
+            >
+              Dismiss
+            </button>
+          </div>
+        </Show>
+        <Show when={showQuotaWarning()}>
+          <div class="banner banner-warning banner-dismissible" data-test="storage-quota-warning" role="status">
+            <span>
+              Browser vault storage is at {quotaUsagePercent()}% of available space. Export or prune notes to avoid data loss.
+            </span>
+            <button
+              type="button"
+              class="banner-dismiss"
+              data-test="storage-quota-warning-dismiss"
+              onClick={dismissQuotaWarning}
+              aria-label="Dismiss storage warning"
             >
               Dismiss
             </button>
@@ -338,7 +617,7 @@ const Header: Component = () => {
         </Show>
       </header>
       <Show when={showShortcuts()}>
-        <ShortcutHelpModal onClose={() => setShowShortcuts(false)} />
+        <ShortcutHelpModal onClose={() => setShowShortcuts(false)} footer={helpFooter()} />
       </Show>
     </>
   );
