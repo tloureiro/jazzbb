@@ -9,10 +9,12 @@ export type NoteMeta = {
   lastModified: number;
 };
 
+type NoteCache = { html: string; links: string[]; headings: HeadingInfo[]; content: string; lastModified: number };
+
 export type VaultState = {
   notes: NoteMeta[];
-  handles: Record<string, FileSystemFileHandle>;
-  cache: Record<string, { html: string; links: string[]; headings: HeadingInfo[]; content: string; lastModified: number }>;
+  handles: Record<string, FileSystemFileHandle | null>;
+  cache: Record<string, NoteCache>;
   selectedPath?: string;
   handle?: VaultHandle;
 };
@@ -39,10 +41,10 @@ export const vaultStore = {
   setHandle(handle: VaultHandle | undefined) {
     setVault('handle', () => handle);
   },
-  setHandles(handles: Record<string, FileSystemFileHandle>) {
+  setHandles(handles: Record<string, FileSystemFileHandle | null>) {
     setVault('handles', () => handles);
   },
-  setCache(path: string, value: { html: string; links: string[]; headings: HeadingInfo[]; content: string; lastModified: number }) {
+  setCache(path: string, value: NoteCache) {
     setVault('cache', path, () => value);
   },
   updateNote(meta: NoteMeta) {
@@ -51,11 +53,7 @@ export const vaultStore = {
       setVault('notes', index, () => meta);
     }
   },
-  addNote(
-    meta: NoteMeta,
-    handle: FileSystemFileHandle,
-    cache: { html: string; links: string[]; headings: HeadingInfo[]; content: string; lastModified: number },
-  ) {
+  addNote(meta: NoteMeta, handle: FileSystemFileHandle | null, cache: NoteCache) {
     setVault('notes', (notes) => [...notes, meta].sort((a, b) => a.path.localeCompare(b.path)));
     setVault('handles', (handles) => ({ ...handles, [meta.path]: handle }));
     setVault('cache', (cacheMap) => ({ ...cacheMap, [meta.path]: cache }));

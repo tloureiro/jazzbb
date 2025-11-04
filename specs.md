@@ -13,6 +13,7 @@
 - Operate directly on `.md` files in the chosen vault folder; expose only markdown files/folders in navigator.
 - Creating, renaming, deleting notes should follow intuitive desktop conventions, respecting the selected location and cursor context.
 - Automatically generate unique filenames (path + filename uniqueness). Cursor location decides the new note's placement.
+- Provide a browser-only fallback vault stored in IndexedDB. Scratch sessions can be promoted into this mode, and users can export/import/reset the vault state without leaving the app.
 - Attachments: accept image drag & drop; rename uploads with a generated SHA-like identifier; display in editor immediately following standard markdown expectations.
 - Config stored in `.json`, located in the vault root. Users can override defaults via manual file editing.
 
@@ -25,7 +26,7 @@
 - Layout inspired by contemporary note apps and IDEs: collapsible sidebar for files when a vault is mounted, central live editor, inspector pane for metadata. Single-file mode hides vault actions but keeps the same editor surface.
 - Outline navigator panel should surface document headings and allow quick jumps (toggle from header, keyboard shortcut encouraged).
 - Provide a light/night theme toggle (sun/moon button in header) so the UI is readable in both bright and dark environments.
-- Allow renaming notes directly from the editor title field (vault notes rename immediately, scratch titles seed the first-save filename).
+- Allow renaming notes directly from the editor title field or inline in the sidebar (double-click); preserve user-entered spacing/casing when saving names in browser vault or single-file sessions.
 - Inspector shows path, timestamps, word/character/line counts, tasks, outgoing links, unsaved status.
 - Provide toast notifications for saves/autosaves/errors; no analytics or logging in production bundle.
 - Maintain pleasant, writer-focused dark theme (WCAG AA contrast nice-to-have but not required).

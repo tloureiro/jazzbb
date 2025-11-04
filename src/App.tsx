@@ -1,18 +1,37 @@
-import { Component, Show } from 'solid-js';
+import { Component, Show, onMount, onCleanup } from 'solid-js';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import EditorPane from './components/EditorPane';
 import InspectorPane from './components/InspectorPane';
 import ToastTray from './components/ToastTray';
 import OutlinePanel from './components/OutlinePanel';
-import { workspaceStore } from './state/workspace';
-import { isInspectorVisible, isOutlineVisible, isHeaderCollapsed, setHeaderCollapsed } from './state/ui';
+import { isVaultMode } from './state/workspace';
+import {
+  isInspectorVisible,
+  isOutlineVisible,
+  isHeaderCollapsed,
+  setHeaderCollapsed,
+  isSidebarCollapsed,
+  setSidebarCollapsed,
+} from './state/ui';
 
 const App: Component = () => {
-  const sidebarVisible = () => workspaceStore.mode() === 'vault';
+  const vaultActive = () => isVaultMode();
+  const sidebarCollapsed = isSidebarCollapsed;
+  const sidebarVisible = () => vaultActive() && !sidebarCollapsed();
   const inspectorVisible = isInspectorVisible;
   const outlineVisible = isOutlineVisible;
   const headerCollapsed = isHeaderCollapsed;
+
+  onMount(() => {
+    if (typeof window !== 'undefined') {
+      const runtime = window as typeof window & { __setSidebarCollapsed?: (value: boolean) => void };
+      runtime.__setSidebarCollapsed = setSidebarCollapsed;
+      onCleanup(() => {
+        delete runtime.__setSidebarCollapsed;
+      });
+    }
+  });
 
   return (
     <main
@@ -48,6 +67,18 @@ const App: Component = () => {
           <OutlinePanel />
         </Show>
       </section>
+      <Show when={vaultActive() && sidebarCollapsed()}>
+        <button
+          type="button"
+          class="sidebar-expand-handle"
+          onClick={() => setSidebarCollapsed(false)}
+          aria-label="Expand vault sidebar"
+          title="Expand vault sidebar (Cmd/Ctrl + Shift + B)"
+          data-test="sidebar-expand"
+        >
+          ▶
+        </button>
+      </Show>
       <ToastTray />
     </main>
   );

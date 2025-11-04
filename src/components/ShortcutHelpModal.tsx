@@ -1,5 +1,6 @@
-import { Component, For, onCleanup, onMount } from 'solid-js';
+import { For, onCleanup, onMount } from 'solid-js';
 import { Portal } from 'solid-js/web';
+import type { Component, JSX } from 'solid-js';
 import { APP_VERSION } from '../version';
 
 type ShortcutItem = {
@@ -36,6 +37,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
 
 type ShortcutHelpModalProps = {
   onClose: () => void;
+  footer?: JSX.Element;
 };
 
 const ShortcutHelpModal: Component<ShortcutHelpModalProps> = (props) => {
@@ -75,8 +77,9 @@ const ShortcutHelpModal: Component<ShortcutHelpModalProps> = (props) => {
             <button
               type="button"
               class="icon-button shortcut-modal__close"
-              onClick={props.onClose}
+              onClick={() => props.onClose()}
               aria-label="Close shortcuts panel"
+              data-test="help-close"
               ref={closeButtonRef}
             >
               ×
@@ -105,6 +108,7 @@ const ShortcutHelpModal: Component<ShortcutHelpModalProps> = (props) => {
               </section>
             )}
           </For>
+          {props.footer && <div class="shortcut-modal__footer">{props.footer}</div>}
         </div>
       </div>
     </Portal>

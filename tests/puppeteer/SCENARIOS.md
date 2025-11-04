@@ -32,3 +32,12 @@
 10. Paste formatted markdown, convert a heading to plain paragraph by prefix removal, and confirm re-render.
 
 These scenarios will be automated using Puppeteer to exercise real browser paste behaviour, including `Ctrl/Cmd+Shift+V` (plain text paste) paths, and will use anonymised fixture content to avoid leaking sensitive text.
+
+## Browser Vault Coverage (Major Feature)
+
+1. Converting a scratch session into a browser vault when creating a new note.
+2. Restoring the browser vault (notes + selection) after reloading the app.
+3. Resetting to an empty state via the `?empty` query parameter.
+4. Exporting current notes to a zip archive and re-importing to rebuild the vault.
+5. Surfacing a dismissible storage quota warning once usage exceeds 75%.
+6. Triggering browser vault deletion and config reset controls from the help panel.

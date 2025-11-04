@@ -143,7 +143,7 @@ describe('saveActiveNote', () => {
     workspaceStore.setMode('scratch');
     vaultStore.reset();
     editorStore.reset();
-    editorStore.setDraft('Scratch note');
+    editorStore.setDraft('Untitled');
 
     vi.mocked(parseNote).mockResolvedValue({ html: '<p>Scratch</p>', title: 'Scratch', links: [], headings: [], lastModified: 5 });
 

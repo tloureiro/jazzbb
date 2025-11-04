@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { indexedDB as fakeIndexedDB, IDBKeyRange as fakeIDBKeyRange } from 'fake-indexeddb';
+import { workspaceStore } from '../../../src/state/workspace';
 import { createNote, deleteNote, renameNote } from '../../../src/platform/note-manager';
 import { vaultStore } from '../../../src/state/vault';
 import { editorStore } from '../../../src/state/editor';
@@ -121,6 +123,8 @@ class FakeDirectoryHandle implements FileSystemDirectoryHandle {
 const fakeDir = new FakeDirectoryHandle();
 
 beforeEach(() => {
+  globalThis.indexedDB = fakeIndexedDB;
+  globalThis.IDBKeyRange = fakeIDBKeyRange;
   vaultStore.reset();
   editorStore.reset();
   vi.mocked(parseNote).mockReset();
@@ -128,6 +132,13 @@ beforeEach(() => {
   vi.mocked(removeDocument).mockReset();
   vi.mocked(openNote).mockReset();
   vaultStore.setHandle({ directoryHandle: fakeDir });
+  workspaceStore.setMode('vault');
+});
+
+afterEach(() => {
+  delete (globalThis as typeof globalThis & { indexedDB?: IDBFactory; IDBKeyRange?: typeof fakeIDBKeyRange }).indexedDB;
+  delete (globalThis as typeof globalThis & { indexedDB?: IDBFactory; IDBKeyRange?: typeof fakeIDBKeyRange }).IDBKeyRange;
+  workspaceStore.reset();
 });
 
 describe('note-manager', () => {

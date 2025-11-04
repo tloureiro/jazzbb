@@ -31,7 +31,7 @@ describe('editorStore', () => {
     expect(editorStore.draft()).toBe('');
     expect(editorStore.html()).toBe('');
     expect(editorStore.links()).toEqual([]);
-    expect(editorStore.displayName()).toBe('Scratch note');
+    expect(editorStore.displayName()).toBe('Untitled');
     expect(editorStore.lastLoaded()).toBe(0);
   });
 });

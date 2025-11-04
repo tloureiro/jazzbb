@@ -4,7 +4,7 @@ import { TextSelection } from 'prosemirror-state';
 import type { HeadingInfo } from '../lib/markdown-engine';
 import { mapHeadingsToText } from '../lib/markdown-engine';
 
-const DEFAULT_SCRATCH_TITLE = 'Scratch note';
+const DEFAULT_SCRATCH_TITLE = 'Untitled';
 export const SCRATCH_TITLE = DEFAULT_SCRATCH_TITLE;
 
 const [activePath, setActivePath] = createSignal<string | undefined>(undefined);
@@ -17,6 +17,7 @@ const [headings, setHeadingsSignal] = createSignal<HeadingInfo[]>([]);
 const [activeHeadingId, setActiveHeadingId] = createSignal<string | undefined>(undefined);
 const [editorInstance, setEditorInstance] = createSignal<Editor | undefined>(undefined);
 const [displayName, setDisplayNameSignal] = createSignal<string>(DEFAULT_SCRATCH_TITLE);
+let pendingFocus: 'start' | 'end' | undefined;
 
 function normalizeDisplayName(path: string | undefined, fallback: string): string {
   if (path) {
@@ -72,10 +73,24 @@ export const editorStore = {
   displayName,
   registerEditor(editor: Editor) {
     setEditorInstance(editor);
+    if (pendingFocus) {
+      editor.chain().focus(pendingFocus).run();
+      pendingFocus = undefined;
+    }
     updateActiveHeadingFromEditor();
   },
   unregisterEditor() {
     setEditorInstance(undefined);
+  },
+  focus(at: 'start' | 'end' = 'end') {
+    const instance = editorInstance();
+    if (!instance) {
+      pendingFocus = at;
+      return false;
+    }
+    instance.chain().focus(at).run();
+    pendingFocus = undefined;
+    return true;
   },
   updateSelectionHeading() {
     updateActiveHeadingFromEditor();

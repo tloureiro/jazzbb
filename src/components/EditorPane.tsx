@@ -6,7 +6,7 @@ import { sanitizeHtml, renderMarkdown, extractHeadings } from '../lib/markdown';
 import { saveActiveNote } from '../platform/save-note';
 import { hasUnsavedChanges } from '../lib/note-stats';
 import { showToast } from '../state/ui';
-import { workspaceStore } from '../state/workspace';
+import { workspaceStore, isVaultMode } from '../state/workspace';
 import { renameNote } from '../platform/note-manager';
 import { SCRATCH_TITLE } from '../state/editor';
 
@@ -16,6 +16,7 @@ const EditorPane: Component = () => {
   let autosaveTimer: number | undefined;
   let autosaveInFlight = false;
   let titleInputRef: HTMLInputElement | undefined;
+  let containerRef: HTMLDivElement | undefined;
 
   const handleChange = (value: string) => {
     editorStore.setDraft(value);
@@ -116,10 +117,12 @@ const EditorPane: Component = () => {
 
   onMount(() => {
     window.addEventListener('keydown', handleKeydown);
+    containerRef?.addEventListener('pointerdown', handleContainerMouseDownCapture, { capture: true });
   });
 
   onCleanup(() => {
     window.removeEventListener('keydown', handleKeydown);
+    containerRef?.removeEventListener('pointerdown', handleContainerMouseDownCapture, { capture: true });
     if (parseTimer !== undefined) {
       window.clearTimeout(parseTimer);
     }
@@ -156,7 +159,7 @@ const EditorPane: Component = () => {
       return;
     }
 
-    if (workspaceStore.mode() !== 'vault') {
+    if (!isVaultMode()) {
       showToast('Renaming is only supported in vault mode right now.', 'info');
       editorStore.setDisplayName(currentBase || SCRATCH_TITLE);
       return;
@@ -187,6 +190,43 @@ const EditorPane: Component = () => {
     }
   };
 
+  const focusEditorFromContainer = (attemptsRemaining = 30) => {
+    const focused = editorStore.focus();
+    if (focused) {
+      return;
+    }
+
+    const root = document.querySelector<HTMLElement>('.tiptap-editor');
+    if (root) {
+      root.focus();
+      return;
+    }
+
+    if (attemptsRemaining <= 0) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => focusEditorFromContainer(attemptsRemaining - 1));
+  };
+
+  const handleContainerMouseDownCapture = (event: PointerEvent) => {
+    if (event.button !== 0) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    if (target.closest('.tiptap-editor')) {
+      return;
+    }
+
+    event.preventDefault();
+    window.requestAnimationFrame(() => focusEditorFromContainer());
+  };
+
   return (
     <section class="editor-pane" aria-label="Editor">
       <header class="pane-header">
@@ -201,7 +241,7 @@ const EditorPane: Component = () => {
           aria-label="Note title"
         />
       </header>
-      <div class="editor-container">
+      <div class="editor-container" ref={containerRef}>
         <CodeEditor value={editorStore.draft} onChange={handleChange} />
       </div>
     </section>

@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import solid from 'vite-plugin-solid';
-import packageJson from './package.json' assert { type: 'json' };
+import packageJson from './package.json' with { type: 'json' };
 
 const { version } = packageJson;
 
@@ -15,7 +15,8 @@ export default defineConfig({
   },
   build: {
     target: 'esnext',
-    sourcemap: true
+    sourcemap: true,
+    chunkSizeWarningLimit: 2048
   },
   test: {
     environment: 'jsdom',

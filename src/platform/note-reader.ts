@@ -3,8 +3,15 @@ import { vaultStore } from '../state/vault';
 import { parseNote } from './parser-service';
 import { sanitizeHtml } from '../lib/markdown';
 import { upsertDocument } from './search-service';
+import { isBrowserVaultMode } from '../state/workspace';
+import { openBrowserVaultNote } from './browser-vault-session';
 
 export async function openNote(path: string): Promise<void> {
+  if (isBrowserVaultMode()) {
+    await openBrowserVaultNote(path);
+    return;
+  }
+
   const handle = vaultStore.state.handles[path];
   if (!handle) {
     console.warn('No file handle available for note', path);

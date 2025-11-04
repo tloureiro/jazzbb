@@ -44,7 +44,7 @@ describe('EditorPane', () => {
 
   it('shows scratch state when no note is selected', () => {
     const { getByDisplayValue, getByTestId } = render(() => <EditorPane />);
-    expect(getByDisplayValue('Scratch note')).toBeInTheDocument();
+    expect(getByDisplayValue('Untitled')).toBeInTheDocument();
     expect(getByTestId('code-editor')).toBeInTheDocument();
   });
 
