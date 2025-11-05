@@ -1,4 +1,5 @@
 import { createSignal } from 'solid-js';
+import { watchSingleFile } from '../platform/file-watcher';
 
 type WorkspaceMode = 'scratch' | 'single' | 'vault' | 'browser';
 
@@ -7,24 +8,27 @@ type SingleFileState = {
   path: string;
 };
 
-const [mode, setMode] = createSignal<WorkspaceMode>('scratch');
+const [mode, setWorkspaceMode] = createSignal<WorkspaceMode>('scratch');
 const [singleFile, setSingleFileState] = createSignal<SingleFileState | undefined>(undefined);
 
 export const workspaceStore = {
   mode,
   setMode(value: WorkspaceMode) {
-    setMode(value);
+    setWorkspaceMode(value);
     if (value !== 'single') {
       setSingleFileState(undefined);
+      watchSingleFile(undefined);
     }
   },
   singleFile,
   setSingleFile(value: SingleFileState | undefined) {
     setSingleFileState(value);
+    watchSingleFile(value);
   },
   reset() {
-    setMode('scratch');
+    setWorkspaceMode('scratch');
     setSingleFileState(undefined);
+    watchSingleFile(undefined);
   },
 };
 

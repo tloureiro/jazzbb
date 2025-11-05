@@ -7,6 +7,7 @@ jazzbb is an offline-first markdown editor / hub that runs entirely in the brows
 - **Vault management**: open a local folder, read/write `.md` files in place, and manage notes (create, rename, delete) from the sidebar.
 - **Single-file mode**: work from a standalone scratch note, then use the header save controls to either store it in the browser vault or write it to disk—with autosave staying off for manual control.
 - **Live editor**: Single-pane TipTap / ProseMirror surface that renders Markdown inline as you type. Debounced worker parsing keeps typing responsive while the editor shows formatted content.
+- **External change detection**: Single-file sessions poll the opened handle every two seconds and reload changes written by other editors (Chromium browsers only); unsaved edits trigger a warning instead of overwriting.
 - **Typography presets**: Five open-license presets (Editorial Classic, Humanist Tech, Swiss Modern + Display, Bookish Oldstyle, Inclusive Readability) accessible from the header. Presets now restyle only the editor and preview content—UI typography remains unchanged—while still tuning body/headline/code families, numeral styles, and spacing inside the document.
 - **Theme toggle**: Quick sun/moon button switches between light and night modes without refreshing.
 - **Safe rendering**: Markdown is parsed with `markdown-it`, math/task lists/footnotes are supported, and DOMPurify sanitises all HTML before display.
@@ -24,7 +25,7 @@ jazzbb is an offline-first markdown editor / hub that runs entirely in the brows
 
 - Node.js 18+ (project tested against Node 20).
 - npm (bundled with Node) or pnpm/yarn if preferred.
-- Chromium-based browser (Chrome/Edge/Brave) with File System Access API support for runtime usage.
+- Chromium-based browser (Chrome/Edge/Brave) with File System Access API support for runtime usage. Firefox is currently not supported because the API is unavailable there.
 
 ## Getting Started
 
@@ -75,6 +76,7 @@ Use the selector in the top-right toolbar to switch between the five systems. Ea
 2. Press **Save to file** – the browser will prompt you to choose a destination (`showSaveFilePicker`).
 3. Once saved, the app switches into *single-file* mode: the sidebar indicates the file name, autosave stays off, and subsequent saves write back to the same handle.
 4. Use **Open file** in the header to reopen an existing markdown file without mounting an entire vault.
+5. Jazzbb watches the opened file every two seconds and reloads external changes automatically (Chromium browsers only).
 
 
 ### Development Notes
