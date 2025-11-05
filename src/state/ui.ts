@@ -8,6 +8,55 @@ const [isHeaderCollapsedSignal, setHeaderCollapsedSignal] = createSignal(false);
 const [isSidebarCollapsedSignal, setSidebarCollapsedSignal] = createSignal(false);
 const [sidebarHoverSignal, setSidebarHoverSignal] = createSignal(false);
 
+const DEFAULT_SIDEBAR_WIDTH = 26;
+const DEFAULT_OUTLINE_WIDTH = 22;
+const SIDEBAR_MIN_WIDTH = 12;
+const SIDEBAR_MAX_WIDTH = 45;
+const OUTLINE_MIN_WIDTH = 12;
+const OUTLINE_MAX_WIDTH = 38;
+const MAX_COMBINED_PANELS = 76;
+const LAYOUT_STORAGE_KEY = 'jazzbb::layout';
+
+type LayoutPreferences = {
+  sidebarWidth?: number;
+  outlineWidth?: number;
+};
+
+function readLayoutPreferences(): LayoutPreferences | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    const value = window.localStorage.getItem(LAYOUT_STORAGE_KEY);
+    if (!value) return undefined;
+    return JSON.parse(value) as LayoutPreferences;
+  } catch (error) {
+    console.warn('Failed to read layout configuration', error);
+    return undefined;
+  }
+}
+
+function writeLayoutPreferences(sidebarWidth: number, outlineWidth: number): void {
+  if (typeof window === 'undefined') return;
+  const payload: LayoutPreferences = {
+    sidebarWidth,
+    outlineWidth,
+  };
+  try {
+    window.localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(payload));
+  } catch (error) {
+    console.warn('Failed to persist layout configuration', error);
+  }
+}
+
+const storedLayout = readLayoutPreferences();
+
+const [sidebarWidthPercentSignal, setSidebarWidthPercentSignal] = createSignal<number>(
+  typeof storedLayout?.sidebarWidth === 'number' ? storedLayout.sidebarWidth : DEFAULT_SIDEBAR_WIDTH,
+);
+
+const [outlineWidthPercentSignal, setOutlineWidthPercentSignal] = createSignal<number>(
+  typeof storedLayout?.outlineWidth === 'number' ? storedLayout.outlineWidth : DEFAULT_OUTLINE_WIDTH,
+);
+
 export function toggleZen(): void {
   setZenMode((prev) => !prev);
 }
@@ -113,6 +162,14 @@ export function setSidebarHoverVisible(value: boolean): void {
   applySidebarHover(value);
 }
 
+const [plainMarkdownModeSignal, setPlainMarkdownModeSignal] = createSignal(false);
+
+export const isPlainMarkdownMode = plainMarkdownModeSignal;
+
+export function togglePlainMarkdownMode(): void {
+  setPlainMarkdownModeSignal((prev) => !prev);
+}
+
 export function setSidebarCollapsed(collapsed: boolean): void {
   setSidebarCollapsedSignal(collapsed);
   applySidebarCollapsed(collapsed);
@@ -133,7 +190,7 @@ export function setTypographyPreset(preset: TypographyPreset): void {
   applyTypographyPreset(preset);
 }
 
-export const DEFAULT_EDITOR_FONT_SCALE = 1.40625;
+export const DEFAULT_EDITOR_FONT_SCALE = 1.1953125;
 export const DEFAULT_EDITOR_MEASURE_SCALE = 1;
 
 const [editorFontScaleSignal, setEditorFontScaleSignal] = createSignal<number>(DEFAULT_EDITOR_FONT_SCALE);
@@ -174,24 +231,51 @@ export function setEditorMeasureScale(scale: number): void {
   applyEditorMeasureScale(clamped);
 }
 
-const [isInspectorVisibleSignal, setInspectorVisibleSignal] = createSignal(false);
-
-export const isInspectorVisible = isInspectorVisibleSignal;
-
-export function toggleInspectorVisibility(): void {
-  setInspectorVisibleSignal((prev) => !prev);
-}
-
-export function setInspectorVisibility(value: boolean): void {
-  setInspectorVisibleSignal(value);
-}
-
 const [isOutlineVisibleSignal, setOutlineVisibleSignal] = createSignal(false);
 
 export const isOutlineVisible = isOutlineVisibleSignal;
 
 export function toggleOutlineVisibility(): void {
   setOutlineVisibleSignal((prev) => !prev);
+}
+
+function clampPercent(value: number, min: number, max: number): number {
+  if (Number.isNaN(value) || !Number.isFinite(value)) return min;
+  return Math.min(Math.max(value, min), max);
+}
+
+export const sidebarWidthPercent = sidebarWidthPercentSignal;
+
+export function setSidebarWidthPercent(value: number): void {
+  let sidebar = clampPercent(value, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH);
+  let outline = outlineWidthPercentSignal();
+  if (sidebar + outline > MAX_COMBINED_PANELS) {
+    outline = clampPercent(MAX_COMBINED_PANELS - sidebar, OUTLINE_MIN_WIDTH, OUTLINE_MAX_WIDTH);
+    setOutlineWidthPercentSignal(outline);
+  }
+  setSidebarWidthPercentSignal(sidebar);
+  writeLayoutPreferences(sidebar, outline);
+}
+
+export function resetSidebarWidthPercent(): void {
+  setSidebarWidthPercent(DEFAULT_SIDEBAR_WIDTH);
+}
+
+export const outlineWidthPercent = outlineWidthPercentSignal;
+
+export function setOutlineWidthPercent(value: number): void {
+  let outline = clampPercent(value, OUTLINE_MIN_WIDTH, OUTLINE_MAX_WIDTH);
+  let sidebar = sidebarWidthPercentSignal();
+  if (sidebar + outline > MAX_COMBINED_PANELS) {
+    sidebar = clampPercent(MAX_COMBINED_PANELS - outline, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH);
+    setSidebarWidthPercentSignal(sidebar);
+  }
+  setOutlineWidthPercentSignal(outline);
+  writeLayoutPreferences(sidebar, outline);
+}
+
+export function resetOutlineWidthPercent(): void {
+  setOutlineWidthPercent(DEFAULT_OUTLINE_WIDTH);
 }
 
 export function toggleTheme(): void {

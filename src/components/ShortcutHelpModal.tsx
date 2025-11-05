@@ -2,38 +2,12 @@ import { For, onCleanup, onMount } from 'solid-js';
 import { Portal } from 'solid-js/web';
 import type { Component, JSX } from 'solid-js';
 import { APP_VERSION } from '../version';
-
-type ShortcutItem = {
-  keys: string;
-  description: string;
-  note?: string;
-};
-
-type ShortcutGroup = {
-  title: string;
-  items: ShortcutItem[];
-};
-
-const SHORTCUT_GROUPS: ShortcutGroup[] = [
-  {
-    title: 'General',
-    items: [
-      { keys: 'Cmd/Ctrl + S', description: 'Save the current note' },
-      { keys: 'Cmd/Ctrl + /', description: 'Open this shortcuts panel' },
-      { keys: 'Cmd/Ctrl + Shift + H', description: 'Toggle the top bar' },
-      { keys: 'Cmd/Ctrl + Shift + O', description: 'Toggle the outline panel' },
-      { keys: 'Cmd/Ctrl + D', description: 'Delete the current line' },
-      { keys: 'Escape', description: 'Close search or dismiss dialogs' },
-    ],
-  },
-  {
-    title: 'Vault mode',
-    items: [
-      { keys: 'Cmd/Ctrl + P', description: 'Search notes', note: 'Vault only' },
-      { keys: 'Cmd/Ctrl + N', description: 'Create a new note', note: 'Vault only' },
-    ],
-  },
-];
+import {
+  getActiveShortcutPlatform,
+  getPlatformDisplayName,
+  getShortcutGroups,
+  type ShortcutGroup,
+} from '../lib/shortcuts';
 
 type ShortcutHelpModalProps = {
   onClose: () => void;
@@ -65,6 +39,10 @@ const ShortcutHelpModal: Component<ShortcutHelpModalProps> = (props) => {
     document.removeEventListener('keydown', handleKeydown);
   });
 
+  const platform = getActiveShortcutPlatform();
+  const platformName = getPlatformDisplayName(platform);
+  const shortcutGroups: ShortcutGroup[] = getShortcutGroups(platform);
+
   return (
     <Portal>
       <div class="modal-backdrop" role="presentation" onClick={handleOverlayClick}>
@@ -86,9 +64,9 @@ const ShortcutHelpModal: Component<ShortcutHelpModalProps> = (props) => {
             </button>
           </header>
           <p class="shortcut-modal__intro">
-            Stay in the flow with quick keys. Cmd indicates the Command key on macOS; use Ctrl on Windows and Linux.
+            Shortcuts below are tailored for {platformName}. Stay in the flow with quick keys.
           </p>
-          <For each={SHORTCUT_GROUPS}>
+          <For each={shortcutGroups}>
             {(group) => (
               <section class="shortcut-modal__group">
                 <h3>{group.title}</h3>

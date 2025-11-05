@@ -11,10 +11,10 @@ describe('App shell', () => {
   });
 
   it('renders header actions', () => {
-    const { getByText } = render(() => <App />);
+    const { getByText, getAllByText } = render(() => <App />);
     expect(getByText('jazzbb')).toBeInTheDocument();
     expect(getByText('Open vault')).toBeInTheDocument();
-    expect(getByText('Save')).toBeInTheDocument();
+    expect(getAllByText(/Save/).length).toBeGreaterThan(0);
     expect(getByText('Search')).toBeInTheDocument();
   });
 });

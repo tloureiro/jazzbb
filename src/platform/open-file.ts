@@ -46,8 +46,7 @@ export async function openSingleFile(): Promise<OpenFileResult> {
     vaultStore.reset();
     workspaceStore.setMode('single');
     workspaceStore.setSingleFile({ handle, path });
-
-  editorStore.setDocument(path, rawContent, sanitized, parsed.links, parsed.headings, parsed.lastModified);
+    editorStore.setDocument(path, rawContent, sanitized, parsed.links, parsed.headings, parsed.lastModified);
     return { status: 'success' };
   } catch (error) {
     if ((error as DOMException)?.name === 'AbortError') {
@@ -56,6 +55,11 @@ export async function openSingleFile(): Promise<OpenFileResult> {
     console.error('Failed to open file', error);
     return { status: 'cancelled' };
   }
+}
+
+export function closeSingleFile(): void {
+  workspaceStore.reset();
+  editorStore.reset();
 }
 
 type FilePickerOptions = {

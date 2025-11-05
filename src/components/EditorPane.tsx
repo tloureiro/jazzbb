@@ -1,14 +1,16 @@
-import { Component, createEffect, onCleanup, onMount } from 'solid-js';
+import { Component, Show, createEffect, createMemo, onCleanup, onMount } from 'solid-js';
 import { editorStore } from '../state/editor';
 import CodeEditor from './CodeEditor';
 import { parseNote } from '../platform/parser-service';
 import { sanitizeHtml, renderMarkdown, extractHeadings } from '../lib/markdown';
 import { saveActiveNote } from '../platform/save-note';
 import { hasUnsavedChanges } from '../lib/note-stats';
-import { showToast } from '../state/ui';
+import { showToast, isPlainMarkdownMode, togglePlainMarkdownMode } from '../state/ui';
 import { workspaceStore, isVaultMode } from '../state/workspace';
 import { renameNote } from '../platform/note-manager';
 import { SCRATCH_TITLE } from '../state/editor';
+import { closeActiveDocument } from '../lib/documents';
+import { getShortcutLabel } from '../lib/shortcuts';
 
 const EditorPane: Component = () => {
   let parseTimer: number | undefined;
@@ -17,6 +19,10 @@ const EditorPane: Component = () => {
   let autosaveInFlight = false;
   let titleInputRef: HTMLInputElement | undefined;
   let containerRef: HTMLDivElement | undefined;
+  let findModeActive = false;
+  let plainEditorRef: HTMLTextAreaElement | undefined;
+
+  const plainMode = isPlainMarkdownMode;
 
   const handleChange = (value: string) => {
     editorStore.setDraft(value);
@@ -49,10 +55,78 @@ const EditorPane: Component = () => {
     }, 150);
   };
 
+  const handlePlainInput = (event: Event) => {
+    const target = event.currentTarget as HTMLTextAreaElement;
+    handleChange(target.value);
+  };
+
   const handleKeydown = async (event: KeyboardEvent) => {
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+    const modifier = event.metaKey || event.ctrlKey;
+    const key = event.key.toLowerCase();
+    if (modifier && event.altKey && key === 'w') {
+      event.preventDefault();
+      await handleCloseDocument();
+      return;
+    }
+
+    if (modifier && event.altKey && key === 'm') {
+      event.preventDefault();
+      togglePlainMarkdownMode();
+      queueMicrotask(() => {
+        if (plainMode()) {
+          plainEditorRef?.focus();
+        } else {
+          editorStore.focus();
+        }
+      });
+      return;
+    }
+
+    if (modifier && key === 's') {
       event.preventDefault();
       await saveActiveNote();
+      return;
+    }
+
+    if (modifier && key === 'f') {
+      findModeActive = true;
+      editorStore.requestAutoExpandOnNextSelection();
+      return;
+    }
+
+    if (modifier && key === 'g') {
+      findModeActive = true;
+      editorStore.requestAutoExpandOnNextSelection();
+      return;
+    }
+
+    if (event.key === 'F3') {
+      findModeActive = true;
+      editorStore.requestAutoExpandOnNextSelection();
+      return;
+    }
+
+    if (event.key === 'Enter' && findModeActive && !modifier && !event.altKey && !event.shiftKey) {
+      editorStore.requestAutoExpandOnNextSelection();
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      findModeActive = false;
+      return;
+    }
+
+    const editingKey =
+      key === 'enter' ||
+      key === 'backspace' ||
+      key === 'delete' ||
+      (!modifier && !event.altKey && event.key.length === 1);
+    if (editingKey) {
+      if (key === 'enter') {
+        editorStore.ensureHeadingVisibleImmediately();
+      } else {
+        editorStore.requestAutoExpandOnNextSelection();
+      }
     }
   };
 
@@ -117,12 +191,22 @@ const EditorPane: Component = () => {
 
   onMount(() => {
     window.addEventListener('keydown', handleKeydown);
+    if (typeof window !== 'undefined') {
+      const runtime = window as typeof window & { __requestAutoExpand?: () => void };
+      runtime.__requestAutoExpand = () => editorStore.requestAutoExpandOnNextSelection();
+    }
     containerRef?.addEventListener('pointerdown', handleContainerMouseDownCapture, { capture: true });
   });
 
   onCleanup(() => {
     window.removeEventListener('keydown', handleKeydown);
     containerRef?.removeEventListener('pointerdown', handleContainerMouseDownCapture, { capture: true });
+    if (typeof window !== 'undefined') {
+      const runtime = window as typeof window & { __requestAutoExpand?: () => void };
+      if (runtime.__requestAutoExpand) {
+        delete runtime.__requestAutoExpand;
+      }
+    }
     if (parseTimer !== undefined) {
       window.clearTimeout(parseTimer);
     }
@@ -191,6 +275,10 @@ const EditorPane: Component = () => {
   };
 
   const focusEditorFromContainer = (attemptsRemaining = 30) => {
+    if (plainMode()) {
+      plainEditorRef?.focus();
+      return;
+    }
     const focused = editorStore.focus();
     if (focused) {
       return;
@@ -223,6 +311,10 @@ const EditorPane: Component = () => {
       return;
     }
 
+    if (plainMode() && target.closest('[data-test="plain-markdown-editor"]')) {
+      return;
+    }
+
     event.preventDefault();
     window.requestAnimationFrame(() => focusEditorFromContainer());
   };
@@ -230,22 +322,81 @@ const EditorPane: Component = () => {
   return (
     <section class="editor-pane" aria-label="Editor">
       <header class="pane-header">
-        <input
-          ref={titleInputRef}
-          type="text"
-          class="editor-title-input"
-          value={editorStore.displayName()}
-          onInput={handleTitleInput}
-          onBlur={handleTitleBlur}
-          onKeyDown={handleTitleKeydown}
-          aria-label="Note title"
-        />
+        <div class="editor-title-row">
+          <div class="editor-title-group">
+            <input
+              ref={titleInputRef}
+              type="text"
+              class="editor-title-input"
+              value={editorStore.displayName()}
+              onInput={handleTitleInput}
+              onBlur={handleTitleBlur}
+              onKeyDown={handleTitleKeydown}
+              aria-label="Note title"
+            />
+            {editorStore.activeHeadingLevel() > 0 && (
+              <span
+                class="heading-level-badge"
+                aria-label={`Heading level ${editorStore.activeHeadingLevel()}`}
+              >
+                H{editorStore.activeHeadingLevel()}
+              </span>
+            )}
+          </div>
+          <Show when={canCloseDocument()}>
+            <button
+              type="button"
+              class="editor-close-button"
+              onClick={handleCloseDocument}
+              aria-label="Close document"
+              title={formatShortcutTitle('Close document', 'close-document')}
+              data-test="editor-close-document"
+            >
+              ×
+            </button>
+          </Show>
+        </div>
       </header>
       <div class="editor-container" ref={containerRef}>
-        <CodeEditor value={editorStore.draft} onChange={handleChange} />
+        <div class="rich-editor-host" classList={{ 'is-hidden': plainMode() }}>
+          <CodeEditor value={editorStore.draft} onChange={handleChange} />
+        </div>
+        <Show when={plainMode()}>
+          <textarea
+            ref={(node) => {
+              plainEditorRef = node ?? undefined;
+            }}
+            class="plain-markdown-editor"
+            value={editorStore.draft()}
+            onInput={handlePlainInput}
+            spellcheck={false}
+            aria-label="Plain markdown editor"
+            data-test="plain-markdown-editor"
+          />
+        </Show>
       </div>
     </section>
   );
 };
 
 export default EditorPane;
+  const formatShortcutTitle = (label: string, id: Parameters<typeof getShortcutLabel>[0]) => {
+    const keys = getShortcutLabel(id);
+    return keys ? `${label} (${keys})` : label;
+  };
+
+  const canCloseDocument = createMemo(() => {
+    const mode = workspaceStore.mode();
+    if (mode === 'single') return true;
+    if ((mode === 'browser' || mode === 'vault') && editorStore.activePath()) return true;
+    if (mode === 'scratch' && editorStore.activePath()) return true;
+    return false;
+  });
+
+  const handleCloseDocument = async () => {
+    const result = await closeActiveDocument();
+    if (result.status === 'closed') {
+      const message = result.context === 'single' ? 'Closed file' : 'Closed note';
+      showToast(message, 'info');
+    }
+  };

@@ -15,6 +15,7 @@ import { lowlight } from '../lib/syntax';
 import { normalizeSerializedMarkdown, renderMarkdown } from '../lib/markdown';
 import { editorStore } from '../state/editor';
 import EmojiSuggestionExtension from '../extensions/emojiSuggestion';
+import { CollapsibleHeading } from '../extensions/collapsibleHeading';
 import { deleteCurrentLine } from '../lib/editorShortcuts';
 import type { EditorView } from '@tiptap/pm/view';
 import type { ResolvedPos } from '@tiptap/pm/model';
@@ -179,9 +180,10 @@ export function CodeEditor(props: CodeEditorProps) {
         StarterKit.configure({
           codeBlock: false,
           link: false,
-          heading: { levels: [1, 2, 3, 4, 5, 6] },
+          heading: false,
           hardBreak: false,
         }),
+        CollapsibleHeading.configure({ levels: [1, 2, 3, 4, 5, 6] }),
         CodeBlockLowlight.configure({
           lowlight,
           HTMLAttributes: { class: 'tiptap-code-block hljs' },
@@ -213,6 +215,7 @@ export function CodeEditor(props: CodeEditorProps) {
           class: 'tiptap-editor',
           spellcheck: 'true',
           'aria-label': 'Markdown editor',
+          'data-grammarly': 'false',
         },
       },
       content: normalizeSerializedMarkdown(props.value()),

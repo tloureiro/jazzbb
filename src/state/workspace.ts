@@ -1,7 +1,7 @@
 import { createSignal } from 'solid-js';
 import { watchSingleFile } from '../platform/file-watcher';
 
-type WorkspaceMode = 'scratch' | 'single' | 'vault' | 'browser';
+export type WorkspaceMode = 'scratch' | 'single' | 'vault' | 'browser';
 
 type SingleFileState = {
   handle: FileSystemFileHandle;

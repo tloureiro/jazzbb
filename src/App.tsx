@@ -1,36 +1,164 @@
-import { Component, Show, onMount, onCleanup } from 'solid-js';
+import { Component, Show, createMemo, createEffect, onMount, onCleanup } from 'solid-js';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import EditorPane from './components/EditorPane';
-import InspectorPane from './components/InspectorPane';
 import ToastTray from './components/ToastTray';
 import OutlinePanel from './components/OutlinePanel';
-import { isVaultMode } from './state/workspace';
+import { isVaultMode, workspaceStore, type WorkspaceMode } from './state/workspace';
 import {
-  isInspectorVisible,
   isOutlineVisible,
   isHeaderCollapsed,
   setHeaderCollapsed,
   isSidebarCollapsed,
   setSidebarCollapsed,
+  sidebarWidthPercent,
+  outlineWidthPercent,
+  setSidebarWidthPercent,
+  setOutlineWidthPercent,
+  resetSidebarWidthPercent,
+  resetOutlineWidthPercent,
 } from './state/ui';
+import { grammarlyStore } from './state/grammarly';
+import { getShortcutLabel } from './lib/shortcuts';
+import { DEFAULT_EDITOR_FONT_SCALE, setEditorFontScale } from './state/ui';
 
 const App: Component = () => {
   const vaultActive = () => isVaultMode();
   const sidebarCollapsed = isSidebarCollapsed;
   const sidebarVisible = () => vaultActive() && !sidebarCollapsed();
-  const inspectorVisible = isInspectorVisible;
   const outlineVisible = isOutlineVisible;
   const headerCollapsed = isHeaderCollapsed;
+  const sidebarWidth = sidebarWidthPercent;
+  const outlineWidth = outlineWidthPercent;
+  const RESIZE_HANDLE_WIDTH = '1rem';
+  let layoutSectionRef: HTMLElement | undefined;
+
+  const formatShortcutTitle = (label: string, id: Parameters<typeof getShortcutLabel>[0]) => {
+    const keys = getShortcutLabel(id);
+    return keys ? `${label} (${keys})` : label;
+  };
+
+  const gridTemplate = createMemo(() => {
+    const hasSidebar = sidebarVisible();
+    const hasOutline = outlineVisible();
+    const sidebarColumn = `${sidebarWidth()}%`;
+    const outlineColumn = `${outlineWidth()}%`;
+    if (hasSidebar && hasOutline) {
+      return `${sidebarColumn} ${RESIZE_HANDLE_WIDTH} 1fr ${RESIZE_HANDLE_WIDTH} ${outlineColumn}`;
+    }
+    if (hasSidebar) {
+      return `${sidebarColumn} ${RESIZE_HANDLE_WIDTH} 1fr`;
+    }
+    if (hasOutline) {
+      return `1fr ${RESIZE_HANDLE_WIDTH} ${outlineColumn}`;
+    }
+    return '1fr';
+  });
+
+  const updateHeaderHeight = () => {
+    if (typeof document === 'undefined') return;
+    const headerElement = document.querySelector<HTMLElement>('.app-header');
+    const collapsed = headerCollapsed();
+    const height = !collapsed && headerElement ? headerElement.getBoundingClientRect().height : 0;
+    document.documentElement.style.setProperty('--app-header-height', `${height}px`);
+  };
+
+  createEffect(() => {
+    headerCollapsed();
+    queueMicrotask(updateHeaderHeight);
+  });
+
+  const beginSidebarResize = (event: PointerEvent) => {
+    if (event.button !== 0) return;
+    const container = layoutSectionRef;
+    if (!container) return;
+    const totalWidth = container.getBoundingClientRect().width;
+    if (totalWidth === 0) return;
+    event.preventDefault();
+    const pointerId = event.pointerId;
+    const startX = event.clientX;
+    const startPercent = sidebarWidth();
+    const startPixels = (startPercent / 100) * totalWidth;
+    const target = event.currentTarget as HTMLElement;
+    target.setPointerCapture(pointerId);
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      if (moveEvent.pointerId !== pointerId) return;
+      const delta = moveEvent.clientX - startX;
+      const nextPixels = startPixels + delta;
+      const nextPercent = (nextPixels / totalWidth) * 100;
+      setSidebarWidthPercent(nextPercent);
+    };
+
+    const handlePointerEnd = (endEvent: PointerEvent) => {
+      if (endEvent.pointerId !== pointerId) return;
+      target.releasePointerCapture(pointerId);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerEnd);
+      window.removeEventListener('pointercancel', handlePointerEnd);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerEnd);
+    window.addEventListener('pointercancel', handlePointerEnd);
+  };
+
+  const beginOutlineResize = (event: PointerEvent) => {
+    if (event.button !== 0) return;
+    const container = layoutSectionRef;
+    if (!container) return;
+    const totalWidth = container.getBoundingClientRect().width;
+    if (totalWidth === 0) return;
+    event.preventDefault();
+    const pointerId = event.pointerId;
+    const startX = event.clientX;
+    const startPercent = outlineWidth();
+    const startPixels = (startPercent / 100) * totalWidth;
+    const target = event.currentTarget as HTMLElement;
+    target.setPointerCapture(pointerId);
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      if (moveEvent.pointerId !== pointerId) return;
+      const delta = startX - moveEvent.clientX;
+      const nextPixels = startPixels + delta;
+      const nextPercent = (nextPixels / totalWidth) * 100;
+      setOutlineWidthPercent(nextPercent);
+    };
+
+    const handlePointerEnd = (endEvent: PointerEvent) => {
+      if (endEvent.pointerId !== pointerId) return;
+      target.releasePointerCapture(pointerId);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerEnd);
+      window.removeEventListener('pointercancel', handlePointerEnd);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerEnd);
+    window.addEventListener('pointercancel', handlePointerEnd);
+  };
 
   onMount(() => {
+    setEditorFontScale(DEFAULT_EDITOR_FONT_SCALE);
+    grammarlyStore.initialize();
+    updateHeaderHeight();
+    const handleResize = () => updateHeaderHeight();
+    window.addEventListener('resize', handleResize);
     if (typeof window !== 'undefined') {
-      const runtime = window as typeof window & { __setSidebarCollapsed?: (value: boolean) => void };
+      const runtime = window as typeof window & {
+        __setSidebarCollapsed?: (value: boolean) => void;
+        __setWorkspaceMode?: (mode: WorkspaceMode) => void;
+      };
       runtime.__setSidebarCollapsed = setSidebarCollapsed;
+      runtime.__setWorkspaceMode = workspaceStore.setMode;
       onCleanup(() => {
         delete runtime.__setSidebarCollapsed;
+        delete runtime.__setWorkspaceMode;
       });
     }
+    onCleanup(() => {
+      window.removeEventListener('resize', handleResize);
+    });
   });
 
   return (
@@ -45,7 +173,7 @@ const App: Component = () => {
           class="header-expand-handle"
           onClick={() => setHeaderCollapsed(false)}
           aria-label="Expand top bar"
-          title="Expand top bar (Cmd/Ctrl + Shift + H)"
+          title={formatShortcutTitle('Expand top bar', 'toggle-top-bar')}
         >
           ▼
         </button>
@@ -53,18 +181,38 @@ const App: Component = () => {
       <section
         class="app-body"
         data-sidebar={sidebarVisible() ? 'true' : 'false'}
-        data-inspector={inspectorVisible() ? 'true' : 'false'}
         data-outline={outlineVisible() ? 'true' : 'false'}
+        style={{ 'grid-template-columns': gridTemplate() }}
+        ref={(node) => {
+          layoutSectionRef = node ?? undefined;
+        }}
       >
         <Show when={sidebarVisible()}>
-          <Sidebar />
+          <>
+            <Sidebar />
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              class="resize-handle"
+              data-panel="sidebar"
+              onPointerDown={beginSidebarResize}
+              onDblClick={resetSidebarWidthPercent}
+            />
+          </>
         </Show>
         <EditorPane />
-        <Show when={inspectorVisible()}>
-          <InspectorPane />
-        </Show>
         <Show when={outlineVisible()}>
-          <OutlinePanel />
+          <>
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              class="resize-handle"
+              data-panel="outline"
+              onPointerDown={beginOutlineResize}
+              onDblClick={resetOutlineWidthPercent}
+            />
+            <OutlinePanel />
+          </>
         </Show>
       </section>
       <Show when={vaultActive() && sidebarCollapsed()}>
@@ -73,7 +221,7 @@ const App: Component = () => {
           class="sidebar-expand-handle"
           onClick={() => setSidebarCollapsed(false)}
           aria-label="Expand vault sidebar"
-          title="Expand vault sidebar (Cmd/Ctrl + Shift + B)"
+          title={formatShortcutTitle('Expand vault sidebar', 'toggle-sidebar')}
           data-test="sidebar-expand"
         >
           ▶
