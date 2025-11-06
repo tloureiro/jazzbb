@@ -50,11 +50,16 @@ function detectGrammarly(): boolean {
 }
 
 const [isSuppressed, setSuppressedSignal] = createSignal(false);
+let collapseSuppressed = false;
 
 export const grammarlyStore = {
   isSuppressed,
+  isCollapseSuppressed() {
+    return collapseSuppressed;
+  },
   initialize() {
     if (detectGrammarly()) {
+      collapseSuppressed = false;
       this.setSuppressed(true);
     }
   },
@@ -64,10 +69,22 @@ export const grammarlyStore = {
       injectSuppression();
     } else {
       removeSuppression();
+      collapseSuppressed = false;
     }
   },
+  suppressForCollapse() {
+    if (collapseSuppressed) return;
+    if (isSuppressed()) return;
+    collapseSuppressed = true;
+    this.setSuppressed(true);
+  },
+  releaseCollapseSuppression() {
+    if (!collapseSuppressed) return;
+    collapseSuppressed = false;
+    this.setSuppressed(false);
+  },
   toggle() {
+    collapseSuppressed = false;
     this.setSuppressed(!isSuppressed());
   },
 };
-

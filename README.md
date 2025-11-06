@@ -16,7 +16,7 @@ jazzbb is an offline-first markdown editor / hub that runs entirely in the brows
 - **Outline navigator**: Toggle a live heading tree (Ctrl/Cmd+Shift+O), collapse/expand levels with arrow keys, and jump between sections without leaving the editor.
 - **Collapsible headings**: Fold any heading inline via the new caret control or `Ctrl/Cmd + Alt/Option + K`. Collapsed sections auto-expand when search jumps into them.
 - **Editable titles**: Rename vault notes in the editor header or inline in the sidebar (double-click a note to edit). Names now preserve spacing/casing in browser vault and single-file modes.
-- **Keyboard shortcuts**: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Ctrl/Cmd+/` toggles the shortcut help, `Ctrl/Cmd+D` deletes the current line, `Ctrl/Cmd+Shift+H` collapses the top bar, `Ctrl/Cmd+Shift+B` collapses the vault sidebar, and `Esc` closes modals. Sidebar buttons mirror these actions.
+- **Keyboard shortcuts**: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Ctrl/Cmd+Shift+Space` opens the command palette, `Ctrl/Cmd+/` toggles the shortcut help, `Ctrl/Cmd+D` deletes the current line, `Ctrl/Cmd+Shift+H` collapses the top bar, `Ctrl/Cmd+Shift+B` collapses the vault sidebar, and `Esc` closes modals. Sidebar buttons mirror these actions.
 - **Browser vault**: Seamlessly graduate from a scratch note into an IndexedDB-backed vault, keep notes/config offline, export/import the entire vault as a `.zip`, and save individual notes to disk without leaving the browser vault.
 - **Browser compatibility note**: Non-Chromium browsers surface a warning banner because the File System Access API is unavailable for saving.
 - **Editing coverage**: Headless Puppeteer suites exercise common authoring behaviours (character deletes, paragraph insertion, blockquote wrapping, ordered list conversion, task toggles, heading conversions). Formatting regression tests ensure Markdown constructs (headings, lists, task items, code blocks, images) render consistently.
@@ -96,6 +96,7 @@ Use the selector in the top-right toolbar to switch between the five systems. Ea
 | `Ctrl/Cmd + N`      | Create new note    |
 | `Ctrl/Cmd + S`      | Save active note   |
 | `Ctrl/Cmd + P`      | Open search overlay|
+| `Ctrl/Cmd + Shift + Space` | Open command palette |
 | `Ctrl/Cmd + Shift + O` | Toggle outline panel|
 | `Ctrl/Cmd + Shift + H` | Collapse/expand top bar |
 | `Ctrl/Cmd + Shift + B` | Collapse/expand vault sidebar |

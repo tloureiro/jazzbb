@@ -109,8 +109,10 @@ test.describe('Markdown formatting scenarios', () => {
 
   test('renders heading level three', async ({ page }) => {
     const editor = await insertMarkdown(page, '### Section Title');
-    const html = await editor.evaluate((node) => node.innerHTML);
-    expect(html).toContain('<h3>Section Title</h3>');
+    const headingText = await editor.evaluate(
+      (node) => node.querySelector('h3')?.textContent?.trim() ?? '',
+    );
+    expect(headingText).toBe('Section Title');
   });
 
   test('renders mixed formatting paragraph', async ({ page }) => {

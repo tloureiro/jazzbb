@@ -5,6 +5,7 @@ import { saveActiveNote, exportActiveNoteToFile } from '../platform/save-note';
 import { editorStore } from '../state/editor';
 import { vaultStore } from '../state/vault';
 import SearchPanel from './SearchPanel';
+import CommandPalette, { type CommandPaletteCommand } from './CommandPalette';
 import { createNote } from '../platform/note-manager';
 import {
   showToast,
@@ -24,7 +25,10 @@ import {
   isHeaderCollapsed,
   setHeaderCollapsed,
   toggleHeaderCollapsed,
+  isSidebarCollapsed,
   toggleSidebarCollapsed,
+  isPlainMarkdownMode,
+  togglePlainMarkdownMode,
 } from '../state/ui';
 import { openSingleFile } from '../platform/open-file';
 import { workspaceStore, isVaultMode, isBrowserVaultMode } from '../state/workspace';
@@ -48,6 +52,7 @@ import { closeActiveDocument } from '../lib/documents';
 
 const Header: Component = () => {
   const [showSearch, setShowSearch] = createSignal(false);
+  const [showCommandPalette, setShowCommandPalette] = createSignal(false);
   const [showShortcuts, setShowShortcuts] = createSignal(false);
   const outlineVisible = isOutlineVisible;
   const currentTheme = theme;
@@ -322,7 +327,164 @@ const Header: Component = () => {
     setShowSearch((prev) => !prev);
   };
 
+  const toggleGrammarlySuppression = () => {
+    grammarlyStore.toggle();
+    showToast(grammarlyStore.isSuppressed() ? 'Grammarly overlays hidden' : 'Grammarly overlays visible', 'info');
+  };
+
+  const commandItems = createMemo<ReadonlyArray<CommandPaletteCommand>>(() => {
+    const themeMode = currentTheme();
+    const outlineActive = outlineVisible();
+    const headerIsCollapsed = headerCollapsed();
+    const sidebarCollapsed = isSidebarCollapsed();
+    const plainMarkdown = isPlainMarkdownMode();
+    const vaultLoading = vaultStore.isLoading();
+    const vaultActive = isVaultMode();
+    const hasActivePath = Boolean(editorStore.activePath());
+    const mode = workspaceStore.mode();
+
+    const items: CommandPaletteCommand[] = [
+      {
+        id: 'search-notes',
+        label: 'Search notes',
+        subtitle: 'Find notes across the vault',
+        shortcut: getShortcutLabel('search-notes'),
+        badge: vaultActive ? undefined : 'Vault only',
+        disabled: !vaultActive || vaultLoading,
+        keywords: 'find locate global search vault',
+        run: () => {
+          if (!isVaultMode()) return;
+          setShowSearch(true);
+        },
+      },
+      {
+        id: 'create-note',
+        label: 'Create new note',
+        shortcut: getShortcutLabel('new-note'),
+        badge: vaultActive ? undefined : 'Vault only',
+        disabled: !vaultActive || vaultLoading,
+        keywords: 'add note new document vault',
+        run: async () => {
+          if (!isVaultMode()) return;
+          await createNote();
+        },
+      },
+      {
+        id: 'save-note',
+        label: 'Save note',
+        shortcut: getShortcutLabel('save-note'),
+        disabled: !canSave(),
+        keywords: 'save write persist',
+        run: async () => {
+          await handleSave();
+        },
+      },
+      {
+        id: 'open-file',
+        label: 'Open file',
+        subtitle: 'Select a Markdown file',
+        shortcut: getShortcutLabel('open-file'),
+        disabled: vaultLoading,
+        keywords: 'open file import single',
+        run: async () => {
+          await handleOpenFile();
+        },
+      },
+      {
+        id: 'close-document',
+        label: 'Close document',
+        shortcut: getShortcutLabel('close-document'),
+        subtitle: 'Return to start view',
+        keywords: 'close document exit note',
+        disabled: mode === 'scratch' && !hasActivePath,
+        run: async () => {
+          await handleCloseDocument();
+        },
+      },
+      {
+        id: 'toggle-outline',
+        label: outlineActive ? 'Hide outline panel' : 'Show outline panel',
+        shortcut: getShortcutLabel('toggle-outline'),
+        keywords: 'outline headings navigation',
+        run: () => {
+          toggleOutlineVisibility();
+        },
+      },
+      {
+        id: 'toggle-sidebar',
+        label: sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar',
+        shortcut: getShortcutLabel('toggle-sidebar'),
+        badge: 'Vault only',
+        disabled: !vaultActive,
+        keywords: 'sidebar files navigation vault',
+        run: () => {
+          if (!isVaultMode()) return;
+          toggleSidebarCollapsed();
+        },
+      },
+      {
+        id: 'toggle-top-bar',
+        label: headerIsCollapsed ? 'Expand top bar' : 'Collapse top bar',
+        shortcut: getShortcutLabel('toggle-top-bar'),
+        keywords: 'header top bar ui',
+        run: () => {
+          setHeaderCollapsed(!headerIsCollapsed);
+        },
+      },
+      {
+        id: 'toggle-theme',
+        label: themeMode === 'light' ? 'Switch to dark theme' : 'Switch to light theme',
+        subtitle: `Current theme: ${themeMode}`,
+        keywords: 'theme appearance light dark color',
+        run: () => {
+          handleToggleTheme();
+        },
+      },
+      {
+        id: 'toggle-plain-markdown',
+        label: plainMarkdown ? 'Show formatted editor' : 'Show plain Markdown',
+        shortcut: getShortcutLabel('toggle-plain-markdown'),
+        keywords: 'markdown plain source editor',
+        run: () => {
+          togglePlainMarkdownMode();
+        },
+      },
+      {
+        id: 'toggle-grammarly',
+        label: grammarlyStore.isSuppressed() ? 'Show Grammarly overlays' : 'Hide Grammarly overlays',
+        shortcut: getShortcutLabel('toggle-grammarly'),
+        keywords: 'grammarly spell grammar suggestions',
+        run: () => {
+          toggleGrammarlySuppression();
+        },
+      },
+      {
+        id: 'open-shortcuts',
+        label: 'Open keyboard shortcuts',
+        subtitle: 'Review available key bindings',
+        shortcut: getShortcutLabel('open-shortcuts'),
+        keywords: 'help shortcuts reference',
+        run: () => {
+          setShowShortcuts(true);
+        },
+      },
+    ];
+
+    return items;
+  });
+
   const handleKeydown = async (event: KeyboardEvent) => {
+    if (
+      (event.metaKey || event.ctrlKey) &&
+      event.shiftKey &&
+      (event.key === ' ' || event.key === 'Spacebar' || event.code === 'Space')
+    ) {
+      event.preventDefault();
+      setShowSearch(false);
+      setShowCommandPalette(true);
+      return;
+    }
+
     if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'h') {
       event.preventDefault();
       toggleHeaderCollapsed();
@@ -348,11 +510,7 @@ const Header: Component = () => {
       await handleOpenFile();
     } else if ((event.metaKey || event.ctrlKey) && event.altKey && event.key.toLowerCase() === 'g') {
       event.preventDefault();
-      grammarlyStore.toggle();
-      showToast(
-        grammarlyStore.isSuppressed() ? 'Grammarly overlays hidden' : 'Grammarly overlays visible',
-        'info',
-      );
+      toggleGrammarlySuppression();
     } else if ((event.metaKey || event.ctrlKey) && event.altKey && event.key.toLowerCase() === 'w') {
       event.preventDefault();
       await handleCloseDocument();
@@ -368,6 +526,7 @@ const Header: Component = () => {
       setShowShortcuts((prev) => !prev);
     } else if (event.key === 'Escape') {
       setShowSearch(false);
+      setShowCommandPalette(false);
     }
   };
 
@@ -658,6 +817,9 @@ const Header: Component = () => {
           <SearchPanel onClose={() => setShowSearch(false)} />
         </Show>
       </header>
+      <Show when={showCommandPalette()}>
+        <CommandPalette commands={commandItems} onClose={() => setShowCommandPalette(false)} />
+      </Show>
       <Show when={showShortcuts()}>
         <ShortcutHelpModal onClose={() => setShowShortcuts(false)} footer={helpFooter()} />
       </Show>

@@ -247,7 +247,7 @@ function clampPercent(value: number, min: number, max: number): number {
 export const sidebarWidthPercent = sidebarWidthPercentSignal;
 
 export function setSidebarWidthPercent(value: number): void {
-  let sidebar = clampPercent(value, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH);
+  const sidebar = clampPercent(value, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH);
   let outline = outlineWidthPercentSignal();
   if (sidebar + outline > MAX_COMBINED_PANELS) {
     outline = clampPercent(MAX_COMBINED_PANELS - sidebar, OUTLINE_MIN_WIDTH, OUTLINE_MAX_WIDTH);
@@ -264,7 +264,7 @@ export function resetSidebarWidthPercent(): void {
 export const outlineWidthPercent = outlineWidthPercentSignal;
 
 export function setOutlineWidthPercent(value: number): void {
-  let outline = clampPercent(value, OUTLINE_MIN_WIDTH, OUTLINE_MAX_WIDTH);
+  const outline = clampPercent(value, OUTLINE_MIN_WIDTH, OUTLINE_MAX_WIDTH);
   let sidebar = sidebarWidthPercentSignal();
   if (sidebar + outline > MAX_COMBINED_PANELS) {
     sidebar = clampPercent(MAX_COMBINED_PANELS - outline, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH);

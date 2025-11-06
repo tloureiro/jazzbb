@@ -584,6 +584,130 @@ button, select, input, textarea {
   color: var(--color-text-muted);
 }
 
+.command-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 8vh 1rem 2rem;
+  z-index: 80;
+}
+
+.command-palette {
+  width: min(560px, 92vw);
+  max-height: min(70vh, 520px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.command-palette__input {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.command-palette__input input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.85rem;
+  color: var(--color-text);
+  font-size: 1rem;
+}
+
+.command-palette__input button {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.6rem;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+}
+
+.command-palette__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.command-palette__item {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  padding: 0.85rem 1rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.command-palette__item:not([data-disabled='true']):hover {
+  background: var(--color-surface-strong);
+}
+
+.command-palette__item[data-active='true'] {
+  background: var(--color-surface-strong);
+  border-left: 3px solid var(--color-accent);
+}
+
+.command-palette__item[data-disabled='true'] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.command-palette__label {
+  font-weight: 600;
+}
+
+.command-palette__subtitle {
+  grid-column: 1 / 2;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.command-palette__meta {
+  grid-column: 2 / 3;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.command-palette__badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.command-palette__shortcut {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-code);
+}
+
+.command-palette__empty {
+  padding: 1.25rem 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
 .banner {
   margin-left: 1rem;
   padding: 0.5rem 0.75rem;

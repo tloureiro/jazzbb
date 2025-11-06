@@ -25,7 +25,8 @@ export type ShortcutId =
   | 'delete-line'
   | 'escape'
   | 'search-notes'
-  | 'new-note';
+  | 'new-note'
+  | 'open-command-palette';
 
 export type ShortcutGroup = {
   title: string;
@@ -45,6 +46,13 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     description: 'Open this shortcuts panel',
     mac: 'Cmd + /',
     windows: 'Ctrl + /',
+    group: 'general',
+  },
+  {
+    id: 'open-command-palette',
+    description: 'Open the command palette',
+    mac: 'Cmd + Shift + Space',
+    windows: 'Ctrl + Shift + Space',
     group: 'general',
   },
   {

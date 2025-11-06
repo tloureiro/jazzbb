@@ -7,7 +7,7 @@
 - **Stack**: SolidJS + Vite + CodeMirror 6; Markdown parsing with `markdown-it` in a Web Worker; DOMPurify for sanitisation; FlexSearch worker for indexing.
 - **State**: `editorStore` manages active path, draft text, preview HTML, and link metadata. `vaultStore` tracks note list, file handles, cached parses, and selection.
 - **File IO**: Use helpers in `src/platform/note-manager.ts` (`createNote`, `renameNote`, `deleteNote`, `saveActiveNote`) to mutate files so caches/search stay in sync.
-- **Keyboard shortcuts**: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Ctrl/Cmd+Shift+H` collapses the top bar, `Ctrl/Cmd+Shift+B` toggles the vault sidebar, `Ctrl/Cmd+Alt+K` folds the current heading, `Esc` closes overlays. Sidebar buttons mirror these actions.
+- **Keyboard shortcuts**: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Ctrl/Cmd+Shift+Space` opens the command palette, `Ctrl/Cmd+Shift+H` collapses the top bar, `Ctrl/Cmd+Shift+B` toggles the vault sidebar, `Ctrl/Cmd+Alt+K` folds the current heading, `Esc` closes overlays. Sidebar buttons mirror these actions.
 - **Collapsible headings**: Each heading renders a caret toggle; click it or press `Cmd/Ctrl + Alt + K` to fold/unfold the section. Collapsed regions auto-expand when selection or search jumps inside.
 - **Outline panel**: `editorStore` now tracks heading metadata + active heading; toggle with `Ctrl/Cmd+Shift+O` or the header button to jump between sections, collapse/expand levels with arrow keys or the caret, and respect outline hierarchy indentation.
 - **Theme toggle**: `toggleTheme()` flips between `light` and `dark` via the header sun/moon button; remember to update palettes in `global.css` when new surfaces appear.

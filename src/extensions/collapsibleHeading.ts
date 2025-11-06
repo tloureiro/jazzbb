@@ -197,7 +197,7 @@ export const CollapsibleHeading = Heading.extend({
           tr.setNodeAttribute(pos, 'collapsed', nextCollapsed);
           dispatch(tr);
           if (nextCollapsed) {
-            grammarlyStore.setSuppressed(true);
+            grammarlyStore.suppressForCollapse();
           }
           return true;
         },
@@ -215,7 +215,7 @@ export const CollapsibleHeading = Heading.extend({
           }
           tr.setNodeAttribute(target.pos, 'collapsed', true);
           dispatch(tr);
-          grammarlyStore.setSuppressed(true);
+          grammarlyStore.suppressForCollapse();
           return true;
         },
       expandHeadingAt:
@@ -275,16 +275,21 @@ export const CollapsibleHeading = Heading.extend({
           return rebuildState(state.doc, editor);
         },
         apply(tr: Transaction, value, oldState, newState) {
+          let nextState: CollapsePluginState | null = null;
           if (tr.docChanged) {
-            return rebuildState(newState.doc, editor);
+            nextState = rebuildState(newState.doc, editor);
+          } else if (!value) {
+            nextState = rebuildState(newState.doc, editor);
+          } else {
+            nextState = {
+              decorations: value.decorations.map(tr.mapping, tr.doc),
+              collapsedRanges: value.collapsedRanges,
+            };
           }
-          if (!value) {
-            return rebuildState(newState.doc, editor);
+          if (value?.collapsedRanges.length && nextState?.collapsedRanges.length === 0) {
+            grammarlyStore.releaseCollapseSuppression();
           }
-          return {
-            decorations: value.decorations.map(tr.mapping, tr.doc),
-            collapsedRanges: value.collapsedRanges,
-          };
+          return nextState ?? rebuildState(newState.doc, editor);
         },
       },
       props: {
