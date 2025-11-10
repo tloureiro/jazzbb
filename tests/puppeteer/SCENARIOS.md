@@ -30,6 +30,11 @@
 8. Toggle list item checkbox using keyboard (space) and confirm state change.
 9. Drag-select multiple list items and indent them with `Tab`.
 10. Paste formatted markdown, convert a heading to plain paragraph by prefix removal, and confirm re-render.
+11. Collapse a heading via caret toggle or `Mod+Alt+K`, move the caret into it, and confirm the section stays hidden.
+12. Collapse a heading via caret toggle or `Mod+Alt+K`, press Enter, and ensure the section expands for editing.
+13. Collapse a heading via caret toggle or `Mod+Alt+K`, then navigate/search into the folded section to ensure it auto-expands when requested.
+14. Use outline keyboard navigation (Arrow keys) to collapse/expand levels and traverse headings.
+15. Open a single file via the header, close it again, and verify the editor returns to scratch mode.
 
 These scenarios will be automated using Puppeteer to exercise real browser paste behaviour, including `Ctrl/Cmd+Shift+V` (plain text paste) paths, and will use anonymised fixture content to avoid leaking sensitive text.
 

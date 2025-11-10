@@ -5,14 +5,13 @@ import { saveActiveNote, exportActiveNoteToFile } from '../platform/save-note';
 import { editorStore } from '../state/editor';
 import { vaultStore } from '../state/vault';
 import SearchPanel from './SearchPanel';
+import CommandPalette, { type CommandPaletteCommand } from './CommandPalette';
 import { createNote } from '../platform/note-manager';
 import {
   showToast,
   typographyPreset,
   setTypographyPreset,
   type TypographyPreset,
-  isInspectorVisible,
-  toggleInspectorVisibility,
   isOutlineVisible,
   toggleOutlineVisibility,
   theme,
@@ -26,10 +25,14 @@ import {
   isHeaderCollapsed,
   setHeaderCollapsed,
   toggleHeaderCollapsed,
+  isSidebarCollapsed,
   toggleSidebarCollapsed,
+  isPlainMarkdownMode,
+  togglePlainMarkdownMode,
 } from '../state/ui';
 import { openSingleFile } from '../platform/open-file';
 import { workspaceStore, isVaultMode, isBrowserVaultMode } from '../state/workspace';
+import { grammarlyStore } from '../state/grammarly';
 import ShortcutHelpModal from './ShortcutHelpModal';
 import {
   exportBrowserVault,
@@ -44,9 +47,12 @@ import {
   refreshBrowserVaultEstimate,
   type StorageEstimate,
 } from '../platform/browser-vault-storage';
+import { getShortcutLabel } from '../lib/shortcuts';
+import { closeActiveDocument } from '../lib/documents';
 
 const Header: Component = () => {
   const [showSearch, setShowSearch] = createSignal(false);
+  const [showCommandPalette, setShowCommandPalette] = createSignal(false);
   const [showShortcuts, setShowShortcuts] = createSignal(false);
   const outlineVisible = isOutlineVisible;
   const currentTheme = theme;
@@ -75,6 +81,12 @@ const Header: Component = () => {
     if (isBrowserMode()) return 'Save to browser';
     return 'Save';
   });
+
+  const formatShortcutTitle = (label: string, id: Parameters<typeof getShortcutLabel>[0]) => {
+    const keys = getShortcutLabel(id);
+    return keys ? `${label} (${keys})` : label;
+  };
+
   let importInputRef: HTMLInputElement | undefined;
 
   const persistBrowserSettings = () => {
@@ -168,6 +180,14 @@ const Header: Component = () => {
       showToast('File picker not supported in this browser.', 'error');
     } else if (result.status === 'success') {
       showToast('Opened file', 'success');
+    }
+  };
+
+  const handleCloseDocument = async () => {
+    const result = await closeActiveDocument();
+    if (result.status === 'closed') {
+      const message = result.context === 'single' ? 'Closed file' : 'Closed note';
+      showToast(message, 'info');
     }
   };
 
@@ -307,7 +327,164 @@ const Header: Component = () => {
     setShowSearch((prev) => !prev);
   };
 
+  const toggleGrammarlySuppression = () => {
+    grammarlyStore.toggle();
+    showToast(grammarlyStore.isSuppressed() ? 'Grammarly overlays hidden' : 'Grammarly overlays visible', 'info');
+  };
+
+  const commandItems = createMemo<ReadonlyArray<CommandPaletteCommand>>(() => {
+    const themeMode = currentTheme();
+    const outlineActive = outlineVisible();
+    const headerIsCollapsed = headerCollapsed();
+    const sidebarCollapsed = isSidebarCollapsed();
+    const plainMarkdown = isPlainMarkdownMode();
+    const vaultLoading = vaultStore.isLoading();
+    const vaultActive = isVaultMode();
+    const hasActivePath = Boolean(editorStore.activePath());
+    const mode = workspaceStore.mode();
+
+    const items: CommandPaletteCommand[] = [
+      {
+        id: 'search-notes',
+        label: 'Search notes',
+        subtitle: 'Find notes across the vault',
+        shortcut: getShortcutLabel('search-notes'),
+        badge: vaultActive ? undefined : 'Vault only',
+        disabled: !vaultActive || vaultLoading,
+        keywords: 'find locate global search vault',
+        run: () => {
+          if (!isVaultMode()) return;
+          setShowSearch(true);
+        },
+      },
+      {
+        id: 'create-note',
+        label: 'Create new note',
+        shortcut: getShortcutLabel('new-note'),
+        badge: vaultActive ? undefined : 'Vault only',
+        disabled: !vaultActive || vaultLoading,
+        keywords: 'add note new document vault',
+        run: async () => {
+          if (!isVaultMode()) return;
+          await createNote();
+        },
+      },
+      {
+        id: 'save-note',
+        label: 'Save note',
+        shortcut: getShortcutLabel('save-note'),
+        disabled: !canSave(),
+        keywords: 'save write persist',
+        run: async () => {
+          await handleSave();
+        },
+      },
+      {
+        id: 'open-file',
+        label: 'Open file',
+        subtitle: 'Select a Markdown file',
+        shortcut: getShortcutLabel('open-file'),
+        disabled: vaultLoading,
+        keywords: 'open file import single',
+        run: async () => {
+          await handleOpenFile();
+        },
+      },
+      {
+        id: 'close-document',
+        label: 'Close document',
+        shortcut: getShortcutLabel('close-document'),
+        subtitle: 'Return to start view',
+        keywords: 'close document exit note',
+        disabled: mode === 'scratch' && !hasActivePath,
+        run: async () => {
+          await handleCloseDocument();
+        },
+      },
+      {
+        id: 'toggle-outline',
+        label: outlineActive ? 'Hide outline panel' : 'Show outline panel',
+        shortcut: getShortcutLabel('toggle-outline'),
+        keywords: 'outline headings navigation',
+        run: () => {
+          toggleOutlineVisibility();
+        },
+      },
+      {
+        id: 'toggle-sidebar',
+        label: sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar',
+        shortcut: getShortcutLabel('toggle-sidebar'),
+        badge: 'Vault only',
+        disabled: !vaultActive,
+        keywords: 'sidebar files navigation vault',
+        run: () => {
+          if (!isVaultMode()) return;
+          toggleSidebarCollapsed();
+        },
+      },
+      {
+        id: 'toggle-top-bar',
+        label: headerIsCollapsed ? 'Expand top bar' : 'Collapse top bar',
+        shortcut: getShortcutLabel('toggle-top-bar'),
+        keywords: 'header top bar ui',
+        run: () => {
+          setHeaderCollapsed(!headerIsCollapsed);
+        },
+      },
+      {
+        id: 'toggle-theme',
+        label: themeMode === 'light' ? 'Switch to dark theme' : 'Switch to light theme',
+        subtitle: `Current theme: ${themeMode}`,
+        keywords: 'theme appearance light dark color',
+        run: () => {
+          handleToggleTheme();
+        },
+      },
+      {
+        id: 'toggle-plain-markdown',
+        label: plainMarkdown ? 'Show formatted editor' : 'Show plain Markdown',
+        shortcut: getShortcutLabel('toggle-plain-markdown'),
+        keywords: 'markdown plain source editor',
+        run: () => {
+          togglePlainMarkdownMode();
+        },
+      },
+      {
+        id: 'toggle-grammarly',
+        label: grammarlyStore.isSuppressed() ? 'Show Grammarly overlays' : 'Hide Grammarly overlays',
+        shortcut: getShortcutLabel('toggle-grammarly'),
+        keywords: 'grammarly spell grammar suggestions',
+        run: () => {
+          toggleGrammarlySuppression();
+        },
+      },
+      {
+        id: 'open-shortcuts',
+        label: 'Open keyboard shortcuts',
+        subtitle: 'Review available key bindings',
+        shortcut: getShortcutLabel('open-shortcuts'),
+        keywords: 'help shortcuts reference',
+        run: () => {
+          setShowShortcuts(true);
+        },
+      },
+    ];
+
+    return items;
+  });
+
   const handleKeydown = async (event: KeyboardEvent) => {
+    if (
+      (event.metaKey || event.ctrlKey) &&
+      event.shiftKey &&
+      (event.key === ' ' || event.key === 'Spacebar' || event.code === 'Space')
+    ) {
+      event.preventDefault();
+      setShowSearch(false);
+      setShowCommandPalette(true);
+      return;
+    }
+
     if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'h') {
       event.preventDefault();
       toggleHeaderCollapsed();
@@ -328,6 +505,15 @@ const Header: Component = () => {
       if (!isVaultMode()) return;
       event.preventDefault();
       setShowSearch(true);
+    } else if ((event.metaKey || event.ctrlKey) && event.altKey && event.key.toLowerCase() === 'o') {
+      event.preventDefault();
+      await handleOpenFile();
+    } else if ((event.metaKey || event.ctrlKey) && event.altKey && event.key.toLowerCase() === 'g') {
+      event.preventDefault();
+      toggleGrammarlySuppression();
+    } else if ((event.metaKey || event.ctrlKey) && event.altKey && event.key.toLowerCase() === 'w') {
+      event.preventDefault();
+      await handleCloseDocument();
     } else if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'o') {
       event.preventDefault();
       toggleOutlineVisibility();
@@ -340,6 +526,7 @@ const Header: Component = () => {
       setShowShortcuts((prev) => !prev);
     } else if (event.key === 'Escape') {
       setShowSearch(false);
+      setShowCommandPalette(false);
     }
   };
 
@@ -421,11 +608,18 @@ const Header: Component = () => {
             onClick={async () => createNote()}
             disabled={workspaceStore.mode() === 'single' || vaultStore.isLoading()}
             data-test="header-new-note"
+            title={formatShortcutTitle('New note', 'new-note')}
           >
             New
           </button>
           <Show when={isScratchMode()}>
-            <button type="button" class="secondary" onClick={handleSaveToBrowserVault} data-test="header-save-browser">
+            <button
+              type="button"
+              class="secondary"
+              onClick={handleSaveToBrowserVault}
+              data-test="header-save-browser"
+              title={formatShortcutTitle('Save note', 'save-note')}
+            >
               Save to browser
             </button>
           </Show>
@@ -435,6 +629,7 @@ const Header: Component = () => {
             onClick={handleSave}
             disabled={!canSave()}
             data-test="header-save-file"
+            title={formatShortcutTitle('Save note', 'save-note')}
           >
             {saveButtonLabel()}
           </button>
@@ -449,17 +644,14 @@ const Header: Component = () => {
               Save to file
             </button>
           </Show>
-          <button type="button" class="secondary" onClick={toggleSearch} disabled={!isVaultMode()}>
-            Search
-          </button>
           <button
             type="button"
             class="secondary"
-            data-active={isInspectorVisible() ? 'true' : 'false'}
-            aria-pressed={isInspectorVisible() ? 'true' : 'false'}
-            onClick={toggleInspectorVisibility}
+            onClick={toggleSearch}
+            disabled={!isVaultMode()}
+            title={formatShortcutTitle('Search notes', 'search-notes')}
           >
-            Inspector
+            Search
           </button>
           <button
             type="button"
@@ -467,6 +659,8 @@ const Header: Component = () => {
             data-active={outlineVisible() ? 'true' : 'false'}
             aria-pressed={outlineVisible() ? 'true' : 'false'}
             onClick={toggleOutlineVisibility}
+            data-test="header-outline-toggle"
+            title={formatShortcutTitle('Toggle outline', 'toggle-outline')}
           >
             Outline
           </button>
@@ -481,7 +675,14 @@ const Header: Component = () => {
             </select>
           </label>
 
-          <button type="button" class="secondary" onClick={handleOpenFile} disabled={vaultStore.isLoading()}>
+          <button
+            type="button"
+            class="secondary"
+            onClick={handleOpenFile}
+            disabled={vaultStore.isLoading()}
+            data-test="header-open-file"
+            title={formatShortcutTitle('Open file', 'open-file')}
+          >
             Open file
           </button>
           <button
@@ -512,7 +713,7 @@ const Header: Component = () => {
             class="icon-button help-toggle"
             onClick={() => setShowShortcuts(true)}
             aria-label="Keyboard shortcuts"
-            title="Keyboard shortcuts (Cmd/Ctrl + /)"
+            title={formatShortcutTitle('Keyboard shortcuts', 'open-shortcuts')}
             data-test="header-help-toggle"
           >
             ?
@@ -605,7 +806,7 @@ const Header: Component = () => {
           class="header-collapse-handle"
           onClick={() => setHeaderCollapsed(true)}
           aria-label="Collapse top bar"
-          title="Collapse top bar (Cmd/Ctrl + Shift + H)"
+          title={formatShortcutTitle('Collapse top bar', 'toggle-top-bar')}
         >
           ▲
         </button>
@@ -616,6 +817,9 @@ const Header: Component = () => {
           <SearchPanel onClose={() => setShowSearch(false)} />
         </Show>
       </header>
+      <Show when={showCommandPalette()}>
+        <CommandPalette commands={commandItems} onClose={() => setShowCommandPalette(false)} />
+      </Show>
       <Show when={showShortcuts()}>
         <ShortcutHelpModal onClose={() => setShowShortcuts(false)} footer={helpFooter()} />
       </Show>

@@ -4,6 +4,7 @@ import { openNote } from '../platform/note-reader';
 import { createNote, deleteNote, renameNote } from '../platform/note-manager';
 import { isVaultMode } from '../state/workspace';
 import { setSidebarCollapsed } from '../state/ui';
+import { getShortcutLabel } from '../lib/shortcuts';
 
 const Sidebar: Component = () => {
   const notes = () => vaultStore.state.notes;
@@ -15,6 +16,11 @@ const Sidebar: Component = () => {
   const handleCreate = async () => {
     if (!isVaultMode()) return;
     await createNote();
+  };
+
+  const formatShortcutTitle = (label: string, id: Parameters<typeof getShortcutLabel>[0]) => {
+    const keys = getShortcutLabel(id);
+    return keys ? `${label} (${keys})` : label;
   };
 
   const selectedPath = () => vaultStore.state.selectedPath;
@@ -99,7 +105,7 @@ const Sidebar: Component = () => {
               class="icon-button sidebar-new-button"
               onClick={handleCreate}
               aria-label="Create new note"
-              title="Create new note"
+              title={formatShortcutTitle('Create new note', 'new-note')}
               data-test="sidebar-new-note"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -128,7 +134,7 @@ const Sidebar: Component = () => {
           class="sidebar-collapse-handle"
           onClick={() => setSidebarCollapsed(true)}
           aria-label="Collapse vault sidebar"
-          title="Collapse vault sidebar (Cmd/Ctrl + Shift + B)"
+          title={formatShortcutTitle('Collapse vault sidebar', 'toggle-sidebar')}
           data-test="sidebar-collapse"
         >
           ◀

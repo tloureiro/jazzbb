@@ -91,9 +91,16 @@ test.describe('Markdown paste regression', () => {
     expect(mode).toBe('markdown');
     expect(count).toBeGreaterThan(0);
 
-    const html = await editor.evaluate((node) => node.innerHTML);
-    expect(html).toContain('<h1>Product Handbook</h1>');
-    expect(html).toContain('<h2>Project Structure</h2>');
+    const { h1, h2Texts, html } = await editor.evaluate((node) => {
+      const collectText = (element: Element | null) => element?.textContent?.trim() ?? '';
+      return {
+        h1: collectText(node.querySelector('h1')),
+        h2Texts: Array.from(node.querySelectorAll('h2')).map((element) => collectText(element)),
+        html: node.innerHTML,
+      };
+    });
+    expect(h1).toBe('Product Handbook');
+    expect(h2Texts).toContain('Project Structure');
     expect(html).toContain('<ul');
     expect(html).not.toContain('## Project Structure');
   });

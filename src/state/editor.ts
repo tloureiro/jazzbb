@@ -4,6 +4,11 @@ import { TextSelection } from 'prosemirror-state';
 import type { HeadingInfo } from '../lib/markdown-engine';
 import { mapHeadingsToText } from '../lib/markdown-engine';
 
+type CollapseCommands = {
+  ensureHeadingVisible: () => boolean;
+  expandHeadingAt: (pos?: number) => boolean;
+};
+
 const DEFAULT_SCRATCH_TITLE = 'Untitled';
 export const SCRATCH_TITLE = DEFAULT_SCRATCH_TITLE;
 
@@ -15,9 +20,11 @@ const [links, setLinks] = createSignal<string[]>([]);
 const [lastLoaded, setLastLoaded] = createSignal<number>(0);
 const [headings, setHeadingsSignal] = createSignal<HeadingInfo[]>([]);
 const [activeHeadingId, setActiveHeadingId] = createSignal<string | undefined>(undefined);
+const [activeHeadingLevel, setActiveHeadingLevel] = createSignal<number>(0);
 const [editorInstance, setEditorInstance] = createSignal<Editor | undefined>(undefined);
 const [displayName, setDisplayNameSignal] = createSignal<string>(DEFAULT_SCRATCH_TITLE);
 let pendingFocus: 'start' | 'end' | undefined;
+let autoExpandNextSelection = false;
 
 function normalizeDisplayName(path: string | undefined, fallback: string): string {
   if (path) {
@@ -32,6 +39,13 @@ function applyHeadings(list: HeadingInfo[]): void {
   if (!list.some((heading) => heading.id === activeHeadingId())) {
     setActiveHeadingId(list[0]?.id);
   }
+  const currentId = activeHeadingId();
+  if (!currentId) {
+    setActiveHeadingLevel(0);
+    return;
+  }
+  const match = list.find((heading) => heading.id === currentId);
+  setActiveHeadingLevel(match?.level ?? 0);
 }
 
 function updateActiveHeadingFromEditor(): void {
@@ -40,6 +54,7 @@ function updateActiveHeadingFromEditor(): void {
   const headingsList = headings();
   if (headingsList.length === 0) {
     setActiveHeadingId(undefined);
+    setActiveHeadingLevel(0);
     return;
   }
 
@@ -59,6 +74,22 @@ function updateActiveHeadingFromEditor(): void {
   }
 
   setActiveHeadingId(currentId);
+  const match = headingsList.find((heading) => heading.id === currentId);
+  setActiveHeadingLevel(match?.level ?? 0);
+}
+
+function expandCollapsedHeadingAtSelection(editor: Editor): void {
+  const { state } = editor;
+  const { $from } = state.selection;
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    const node = $from.node(depth);
+    if (node.type.name !== 'heading') continue;
+    const pos = $from.before(depth);
+    if (node.attrs.collapsed) {
+      editor.view.dispatch(state.tr.setNodeAttribute(pos, 'collapsed', false));
+    }
+    break;
+  }
 }
 
 export const editorStore = {
@@ -70,6 +101,7 @@ export const editorStore = {
   lastLoaded,
   headings,
   activeHeadingId,
+  activeHeadingLevel,
   displayName,
   registerEditor(editor: Editor) {
     setEditorInstance(editor);
@@ -81,6 +113,9 @@ export const editorStore = {
   },
   unregisterEditor() {
     setEditorInstance(undefined);
+    setActiveHeadingId(undefined);
+    setActiveHeadingLevel(0);
+    autoExpandNextSelection = false;
   },
   focus(at: 'start' | 'end' = 'end') {
     const instance = editorInstance();
@@ -93,6 +128,13 @@ export const editorStore = {
     return true;
   },
   updateSelectionHeading() {
+    const editor = editorInstance();
+    if (editor && autoExpandNextSelection) {
+      const commands = editor.commands as typeof editor.commands & CollapseCommands;
+      commands.ensureHeadingVisible();
+      expandCollapsedHeadingAtSelection(editor);
+      autoExpandNextSelection = false;
+    }
     updateActiveHeadingFromEditor();
   },
   setDocument(
@@ -103,6 +145,7 @@ export const editorStore = {
     headingTargets: HeadingInfo[],
     timestamp: number,
   ) {
+    autoExpandNextSelection = false;
     setActivePath(path);
     setContent(raw);
     setDraftValue(raw);
@@ -124,11 +167,25 @@ export const editorStore = {
   },
   setActiveHeading(id: string | undefined) {
     setActiveHeadingId(id);
+    const headingsList = headings();
+    const match = headingsList.find((heading) => heading.id === id);
+    setActiveHeadingLevel(match?.level ?? 0);
   },
   setDisplayName(value: string) {
     setDisplayNameSignal(value);
   },
-  scrollToHeading(id: string) {
+  requestAutoExpandOnNextSelection() {
+    autoExpandNextSelection = true;
+  },
+  ensureHeadingVisibleImmediately() {
+    const editor = editorInstance();
+    if (!editor) return;
+    const commands = editor.commands as typeof editor.commands & CollapseCommands;
+    commands.ensureHeadingVisible();
+    expandCollapsedHeadingAtSelection(editor);
+    autoExpandNextSelection = false;
+  },
+  scrollToHeading(id: string, options?: { focusEditor?: boolean }) {
     const editor = editorInstance();
     if (!editor) return;
     const headingsList = headings();
@@ -136,15 +193,23 @@ export const editorStore = {
     const positioned = mapHeadingsToText(editor.state.doc, headingsList);
     const target = positioned.find((entry) => entry.id === id);
     if (!target) return;
+    const commands = editor.commands as typeof editor.commands & CollapseCommands;
+    commands.expandHeadingAt(target.pos);
     const doc = editor.state.doc;
     const pos = Math.min(target.pos + 1, doc.content.size);
     const selection = TextSelection.create(doc, pos);
     editor.view.dispatch(editor.state.tr.setSelection(selection));
-    editor.commands.focus();
+    const shouldFocus = options?.focusEditor ?? true;
+    if (shouldFocus) {
+      editor.commands.focus();
+    }
     editor.commands.scrollIntoView();
+    const match = headingsList.find((heading) => heading.id === id);
+    setActiveHeadingLevel(match?.level ?? 0);
     setActiveHeadingId(id);
   },
   reset() {
+    autoExpandNextSelection = false;
     setActivePath(undefined);
     setContent('');
     setDraftValue('');

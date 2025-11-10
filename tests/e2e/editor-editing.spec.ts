@@ -76,8 +76,10 @@ test.describe('Editing behaviour', () => {
   test('hash heading converts to H1', async ({ page }) => {
     const editor = await focusEditor(page);
     await page.keyboard.type('# Title');
-    const html = await editorHTML(editor);
-    expect(html).toContain('<h1>Title</h1>');
+    const headingText = await editor.evaluate(
+      (node) => node.querySelector('h1')?.textContent?.trim() ?? '',
+    );
+    expect(headingText).toBe('Title');
   });
 
   test('bold shortcut wraps selection', async ({ page }) => {

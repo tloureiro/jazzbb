@@ -15,6 +15,11 @@
     "types": [
       "vite/client"
     ],
+    "typeRoots": [
+      "./src/types",
+      "./node_modules/@types",
+      "./node_modules"
+    ],
     "noEmit": true,
     "target": "ES2021",
     "downlevelIteration": true

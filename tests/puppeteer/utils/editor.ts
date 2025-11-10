@@ -2,6 +2,7 @@ import type { Page } from 'puppeteer';
 import type { ResolvedPos, Slice } from '@tiptap/pm/model';
 import type { Transaction } from '@tiptap/pm/state';
 import type { EditorView } from '@tiptap/pm/view';
+import { WAIT_TIMEOUT } from './timeouts';
 
 const IS_MAC = process.platform === 'darwin';
 const MOD_KEY = IS_MAC ? 'Meta' : 'Control';
@@ -42,7 +43,7 @@ type RuntimeWindow = typeof window & {
 };
 
 export async function waitForEditor(page: Page): Promise<void> {
-  await page.waitForFunction(() => Boolean((window as RuntimeWindow).__tiptapEditor), { timeout: 10_000 });
+  await page.waitForFunction(() => Boolean((window as RuntimeWindow).__tiptapEditor), { timeout: WAIT_TIMEOUT });
 }
 
 export async function resetEditor(page: Page): Promise<void> {
@@ -151,7 +152,7 @@ export async function selectAll(page: Page): Promise<void> {
 }
 
 export async function typeText(page: Page, text: string): Promise<void> {
-  await page.keyboard.type(text, { delay: 5 });
+  await page.keyboard.type(text, { delay: 1 });
 }
 
 export async function press(page: Page, key: string): Promise<void> {

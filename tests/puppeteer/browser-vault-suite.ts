@@ -4,6 +4,7 @@ import type { Browser, Page } from 'puppeteer';
 import JSZip from 'jszip';
 import { startTestServer, stopTestServer } from './utils/server';
 import { focusEditor, resetEditor, waitForEditor, pasteAsPlainText } from './utils/editor';
+import { WAIT_TIMEOUT } from './utils/timeouts';
 
 type DebugStatus = {
   mode: 'scratch' | 'browser' | 'vault';
@@ -108,18 +109,21 @@ export async function runBrowserVaultSuite(): Promise<void> {
     console.log('  • saves scratch note into browser vault via header control');
     await focusEditor(page);
     await pasteAsPlainText(page, '# Scratch Save\n\nSaved through header action.');
-    await page.waitForSelector('[data-test="header-save-file"]');
+    await page.waitForSelector('[data-test="header-save-file"]', { timeout: WAIT_TIMEOUT });
     const saveFileDisabled = await page.$eval(
       '[data-test="header-save-file"]',
       (element) => element.getAttribute('disabled'),
     );
     assert.equal(saveFileDisabled, null, 'Save to file button should be enabled in scratch mode');
     await page.click('[data-test="header-save-browser"]');
-    await page.waitForFunction(() => {
-      const runtime = window as typeof window & { __browserVault?: BrowserVaultDebugApi };
-      const snapshot = runtime.__browserVault?.status();
-      return snapshot?.mode === 'browser';
-    });
+    await page.waitForFunction(
+      () => {
+        const runtime = window as typeof window & { __browserVault?: BrowserVaultDebugApi };
+        const snapshot = runtime.__browserVault?.status();
+        return snapshot?.mode === 'browser';
+      },
+      { timeout: WAIT_TIMEOUT },
+    );
     let snapshot = await status(page);
     assert.equal(snapshot.mode, 'browser');
     const savedPathViaButton = snapshot.selection ?? snapshot.notes[0]?.path;
@@ -153,10 +157,13 @@ export async function runBrowserVaultSuite(): Promise<void> {
       });
     });
     await page.click('[data-test="header-export-note"]');
-    await page.waitForFunction(() => {
-      const runtime = window as typeof window & { __exportedNote?: string };
-      return typeof runtime.__exportedNote === 'string';
-    });
+    await page.waitForFunction(
+      () => {
+        const runtime = window as typeof window & { __exportedNote?: string };
+        return typeof runtime.__exportedNote === 'string';
+      },
+      { timeout: WAIT_TIMEOUT },
+    );
     const exportedContent = await page.evaluate(() => {
       const runtime = window as typeof window & { __exportedNote?: string };
       const value = runtime.__exportedNote ?? '';
@@ -186,8 +193,10 @@ export async function runBrowserVaultSuite(): Promise<void> {
       `Collapse button vertical misalignment: expected within 24px of header top, got ${collapseAlignment.collapseTop - collapseAlignment.headerTop}px`,
     );
     await page.click('[data-test="sidebar-collapse"]');
-    await page.waitForFunction(() => document.documentElement.dataset.sidebarCollapsed === 'true');
-    await page.waitForSelector('[data-test="sidebar-expand"]');
+    await page.waitForFunction(() => document.documentElement.dataset.sidebarCollapsed === 'true', {
+      timeout: WAIT_TIMEOUT,
+    });
+    await page.waitForSelector('[data-test="sidebar-expand"]', { timeout: WAIT_TIMEOUT });
     await page.mouse.move(10, 220);
     const expandAlignment = await page.evaluate(() => {
       const expandButton = document.querySelector('[data-test="sidebar-expand"]');
@@ -210,7 +219,20 @@ export async function runBrowserVaultSuite(): Promise<void> {
       const runtime = window as typeof window & { __setSidebarCollapsed?: (value: boolean) => void };
       runtime.__setSidebarCollapsed?.(false);
     });
-    await page.waitForSelector('.sidebar', { state: 'attached' });
+    await page.waitForSelector('.sidebar', { state: 'attached', timeout: WAIT_TIMEOUT });
+
+    console.log('  • closes the active browser vault note via toolbar control');
+    await page.waitForSelector('[data-test="editor-close-document"]', { timeout: WAIT_TIMEOUT });
+    await page.click('[data-test="editor-close-document"]');
+    await page.waitForFunction(
+      () => !document.querySelector('[data-test="editor-close-document"]'),
+      { timeout: WAIT_TIMEOUT },
+    );
+    const selectionAfterClose = await page.evaluate(() => {
+      const runtime = window as typeof window & { __browserVault?: BrowserVaultDebugApi };
+      return runtime.__browserVault?.status().selection ?? null;
+    });
+    assert.equal(selectionAfterClose, null, 'Browser vault selection should clear after closing document');
 
     await clearVault(page);
     await page.goto(`${origin}/?empty`);
@@ -220,11 +242,14 @@ export async function runBrowserVaultSuite(): Promise<void> {
     await focusEditor(page);
     await pasteAsPlainText(page, '# Scratch\n\nThis note should persist.');
     await page.click('[data-test="header-new-note"]');
-    await page.waitForFunction(() => {
-      const runtime = window as typeof window & { __browserVault?: BrowserVaultDebugApi };
-      const snapshot = runtime.__browserVault?.status();
-      return Boolean(snapshot && snapshot.notes.length > 0);
-    });
+    await page.waitForFunction(
+      () => {
+        const runtime = window as typeof window & { __browserVault?: BrowserVaultDebugApi };
+        const snapshot = runtime.__browserVault?.status();
+        return Boolean(snapshot && snapshot.notes.length > 0);
+      },
+      { timeout: WAIT_TIMEOUT },
+    );
 
     snapshot = await status(page);
     assert.equal(snapshot.mode, 'browser');
@@ -257,11 +282,14 @@ export async function runBrowserVaultSuite(): Promise<void> {
     await focusEditor(page);
     await pasteAsPlainText(page, '# Export Source\n\nContent before export.');
     await page.click('[data-test="header-new-note"]');
-    await page.waitForFunction(() => {
-      const runtime = window as typeof window & { __browserVault?: BrowserVaultDebugApi };
-      const snapshot = runtime.__browserVault?.status();
-      return Boolean(snapshot && snapshot.notes.length >= 2);
-    });
+    await page.waitForFunction(
+      () => {
+        const runtime = window as typeof window & { __browserVault?: BrowserVaultDebugApi };
+        const snapshot = runtime.__browserVault?.status();
+        return Boolean(snapshot && snapshot.notes.length >= 2);
+      },
+      { timeout: WAIT_TIMEOUT },
+    );
     await resetEditor(page);
     await pasteAsPlainText(page, '# Secondary\n\nAnother note.');
 
@@ -296,14 +324,14 @@ export async function runBrowserVaultSuite(): Promise<void> {
 
     console.log('  • quota warning banner can be dismissed');
     await setQuotaEstimate(page, 800, 1000);
-    await page.waitForSelector('[data-test="storage-quota-warning"]');
+    await page.waitForSelector('[data-test="storage-quota-warning"]', { timeout: WAIT_TIMEOUT });
     await page.click('[data-test="storage-quota-warning-dismiss"]');
     const warningVisible = await page.$('[data-test="storage-quota-warning"]');
     assert.equal(warningVisible, null);
 
     console.log('  • delete browser vault from help panel');
     await page.click('[data-test="header-help-toggle"]');
-    await page.waitForSelector('[data-test="browser-vault-delete"]');
+    await page.waitForSelector('[data-test="browser-vault-delete"]', { timeout: WAIT_TIMEOUT });
     const deleteDialog = new Promise<void>((resolve) => {
       page?.once('dialog', (dialog) => {
         dialog.accept();
@@ -312,7 +340,7 @@ export async function runBrowserVaultSuite(): Promise<void> {
     });
     await page.click('[data-test="browser-vault-delete"]');
     await deleteDialog;
-    await page.waitForSelector('[data-test="help-close"]');
+    await page.waitForSelector('[data-test="help-close"]', { timeout: WAIT_TIMEOUT });
     await page.click('[data-test="help-close"]');
     snapshot = await status(page);
     assert.equal(snapshot.mode, 'scratch');
@@ -323,7 +351,7 @@ export async function runBrowserVaultSuite(): Promise<void> {
     await page.click('[data-test="header-new-note"]');
     await page.click('[data-test="theme-toggle"]');
     await page.click('[data-test="header-help-toggle"]');
-    await page.waitForSelector('[data-test="browser-config-reset"]');
+    await page.waitForSelector('[data-test="browser-config-reset"]', { timeout: WAIT_TIMEOUT });
     const resetDialog = new Promise<void>((resolve) => {
       page?.once('dialog', (dialog) => {
         dialog.accept();

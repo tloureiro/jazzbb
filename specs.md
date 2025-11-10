@@ -23,11 +23,12 @@
 - No Vim/Emacs modes. Keyboard shortcuts: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Esc` close overlays; extend the set cautiously and keep behaviour discoverable.
 - Autosave after inactivity (vault mode only); manual save updates status toasts. Scratch/single-file sessions prompt for a destination and rely on manual saves. Session-only state; refresh is acceptable during development.
 
-- Layout inspired by contemporary note apps and IDEs: collapsible sidebar for files when a vault is mounted, central live editor, inspector pane for metadata. Single-file mode hides vault actions but keeps the same editor surface.
-- Outline navigator panel should surface document headings and allow quick jumps (toggle from header, keyboard shortcut encouraged).
+- Layout inspired by contemporary note apps and IDEs: collapsible sidebar for files when a vault is mounted and a central live editor. Single-file mode hides vault actions but keeps the same editor surface.
+- Outline navigator panel should surface document headings, provide clear hierarchical indentation, and allow collapsing/expanding levels (keyboard friendly with arrow keys).
+- Headings expose inline collapse toggles (clickable caret and `Cmd/Ctrl+Alt+K` shortcut); collapsed sections remain searchable and auto-expand when focus or search matches land inside them.
+- Single-file mode must expose an explicit “Close file” control so users can return to a scratch note without reloading the app.
 - Provide a light/night theme toggle (sun/moon button in header) so the UI is readable in both bright and dark environments.
 - Allow renaming notes directly from the editor title field or inline in the sidebar (double-click); preserve user-entered spacing/casing when saving names in browser vault or single-file sessions.
-- Inspector shows path, timestamps, word/character/line counts, tasks, outgoing links, unsaved status.
 - Provide toast notifications for saves/autosaves/errors; no analytics or logging in production bundle.
 - Maintain pleasant, writer-focused dark theme (WCAG AA contrast nice-to-have but not required).
 
