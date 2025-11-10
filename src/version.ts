@@ -1,3 +1,3 @@
-declare const __APP_VERSION__: string;
+import packageJson from '../package.json' with { type: 'json' };
 
-export const APP_VERSION = __APP_VERSION__;
+export const APP_VERSION = packageJson.version ?? '0.0.0';
