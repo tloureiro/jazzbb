@@ -1,4 +1,4 @@
-import { Component, Show, createMemo, createEffect, onMount, onCleanup } from 'solid-js';
+import { Component, Show, createMemo, createEffect, onMount, onCleanup, createSignal } from 'solid-js';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import EditorPane from './components/EditorPane';
@@ -19,7 +19,7 @@ import {
   resetOutlineWidthPercent,
 } from './state/ui';
 import { grammarlyStore } from './state/grammarly';
-import { getShortcutLabel } from './lib/shortcuts';
+import { getShortcutLabel, subscribeToShortcutChanges } from './lib/shortcuts';
 import { DEFAULT_EDITOR_FONT_SCALE, setEditorFontScale } from './state/ui';
 
 const App: Component = () => {
@@ -32,8 +32,15 @@ const App: Component = () => {
   const outlineWidth = outlineWidthPercent;
   const RESIZE_HANDLE_WIDTH = '1rem';
   let layoutSectionRef: HTMLElement | undefined;
+  const [shortcutsVersion, setShortcutsVersion] = createSignal(0);
+  onCleanup(
+    subscribeToShortcutChanges(() => {
+      setShortcutsVersion((value) => value + 1);
+    }),
+  );
 
   const formatShortcutTitle = (label: string, id: Parameters<typeof getShortcutLabel>[0]) => {
+    shortcutsVersion();
     const keys = getShortcutLabel(id);
     return keys ? `${label} (${keys})` : label;
   };

@@ -9,7 +9,7 @@ import { grammarlyStore } from '../state/grammarly';
 
 type CollapsedRange = { from: number; to: number; headingPos: number };
 
-type CollapseCommandSet = {
+export type CollapseCommandSet = {
   toggleHeadingCollapse: (options?: ToggleOptions) => boolean;
   collapseHeadingAt: (pos?: number) => boolean;
   expandHeadingAt: (pos?: number) => boolean;

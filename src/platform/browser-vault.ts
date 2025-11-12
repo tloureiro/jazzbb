@@ -20,6 +20,7 @@ export type BrowserVaultSettings = {
   typographyPreset: string;
   fontScale: number;
   measureScale: number;
+  colorScheme: string;
 };
 
 const DB_NAME = 'jazzbb-browser-vault';
@@ -34,6 +35,7 @@ const DEFAULT_SETTINGS: BrowserVaultSettings = {
   typographyPreset: 'editorial-classic',
   fontScale: 1.40625,
   measureScale: 1,
+  colorScheme: 'midnight-jazz',
 };
 
 type MetaRecord<T = unknown> = { key: string; value: T };

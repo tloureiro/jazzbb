@@ -1,4 +1,4 @@
-import { For, onCleanup, onMount } from 'solid-js';
+import { For, Show, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import { Portal } from 'solid-js/web';
 import type { Component, JSX } from 'solid-js';
 import { APP_VERSION } from '../version';
@@ -7,6 +7,14 @@ import {
   getPlatformDisplayName,
   getShortcutGroups,
   type ShortcutGroup,
+  type ShortcutId,
+  setShortcutOverride,
+  resetShortcutOverride,
+  resetAllShortcuts,
+  bindingFromEvent,
+  findShortcutUsingBinding,
+  getShortcutDefinition,
+  subscribeToShortcutChanges,
 } from '../lib/shortcuts';
 
 type ShortcutHelpModalProps = {
@@ -16,16 +24,31 @@ type ShortcutHelpModalProps = {
 
 const ShortcutHelpModal: Component<ShortcutHelpModalProps> = (props) => {
   let closeButtonRef: HTMLButtonElement | undefined;
+  let captureListener: ((event: KeyboardEvent) => void) | null = null;
+  const [editingId, setEditingId] = createSignal<ShortcutId | null>(null);
+  const [captureError, setCaptureError] = createSignal<string | null>(null);
+  const [shortcutsVersion, setShortcutsVersion] = createSignal(0);
+
+  const stopCapture = () => {
+    if (captureListener) {
+      document.removeEventListener('keydown', captureListener, true);
+      captureListener = null;
+    }
+    setEditingId(null);
+    setCaptureError(null);
+  };
 
   const handleKeydown = (event: KeyboardEvent) => {
     if (event.key === 'Escape') {
       event.preventDefault();
+      stopCapture();
       props.onClose();
     }
   };
 
   const handleOverlayClick = (event: MouseEvent) => {
     if (event.target === event.currentTarget) {
+      stopCapture();
       props.onClose();
     }
   };
@@ -37,11 +60,70 @@ const ShortcutHelpModal: Component<ShortcutHelpModalProps> = (props) => {
 
   onCleanup(() => {
     document.removeEventListener('keydown', handleKeydown);
+    stopCapture();
   });
 
   const platform = getActiveShortcutPlatform();
   const platformName = getPlatformDisplayName(platform);
-  const shortcutGroups: ShortcutGroup[] = getShortcutGroups(platform);
+  onCleanup(
+    subscribeToShortcutChanges(() => {
+      setShortcutsVersion((value) => value + 1);
+    }),
+  );
+  const shortcutGroups = createMemo<ShortcutGroup[]>(() => {
+    shortcutsVersion();
+    return getShortcutGroups(platform);
+  });
+
+  const handleStartCapture = (id: ShortcutId) => {
+    if (editingId() === id) {
+      return;
+    }
+    stopCapture();
+    setEditingId(id);
+    setCaptureError(null);
+    captureListener = (event: KeyboardEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      if (event.key === 'Escape' && !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+        stopCapture();
+        return;
+      }
+      const binding = bindingFromEvent(event);
+      if (!binding) {
+        setCaptureError('Press a non-modifier key to finish.');
+        return;
+      }
+      const conflict = findShortcutUsingBinding(binding, platform, id);
+      if (conflict) {
+        const conflictDefinition = getShortcutDefinition(conflict);
+        setCaptureError(`Already assigned to “${conflictDefinition?.description ?? conflict}”.`);
+        return;
+      }
+      try {
+        setShortcutOverride(id, binding, platform);
+        stopCapture();
+      } catch (error) {
+        setCaptureError(error instanceof Error ? error.message : 'Failed to record shortcut.');
+      }
+    };
+    document.addEventListener('keydown', captureListener, { capture: true });
+  };
+
+  const handleResetShortcut = (id: ShortcutId) => {
+    resetShortcutOverride(id, platform);
+    if (editingId() === id) {
+      stopCapture();
+    }
+  };
+
+  const handleResetAll = () => {
+    stopCapture();
+    resetAllShortcuts(platform);
+  };
+
+  const isListening = (id: ShortcutId) => editingId() === id;
 
   return (
     <Portal>
@@ -55,7 +137,10 @@ const ShortcutHelpModal: Component<ShortcutHelpModalProps> = (props) => {
             <button
               type="button"
               class="icon-button shortcut-modal__close"
-              onClick={() => props.onClose()}
+              onClick={() => {
+                stopCapture();
+                props.onClose();
+              }}
               aria-label="Close shortcuts panel"
               data-test="help-close"
               ref={closeButtonRef}
@@ -64,20 +149,54 @@ const ShortcutHelpModal: Component<ShortcutHelpModalProps> = (props) => {
             </button>
           </header>
           <p class="shortcut-modal__intro">
-            Shortcuts below are tailored for {platformName}. Stay in the flow with quick keys.
+            Shortcuts below are tailored for {platformName}. Click “Set custom” to record your own binding—saved only in
+            this browser.
           </p>
-          <For each={shortcutGroups}>
+          <div class="shortcut-modal__controls">
+            <button type="button" class="secondary" onClick={handleResetAll}>
+              Reset all to defaults
+            </button>
+          </div>
+          <For each={shortcutGroups()}>
             {(group) => (
               <section class="shortcut-modal__group">
                 <h3>{group.title}</h3>
                 <ul class="shortcut-modal__list">
                   <For each={group.items}>
                     {(item) => (
-                      <li class="shortcut-modal__item">
-                        <span class="shortcut-modal__keys">{item.keys}</span>
+                      <li
+                        class="shortcut-modal__item"
+                        data-custom={item.custom ? 'true' : 'false'}
+                        data-editing={isListening(item.id) ? 'true' : 'false'}
+                      >
+                        <div class="shortcut-modal__keys" aria-live="polite">
+                          {isListening(item.id) ? 'Press new shortcut…' : item.keys}
+                        </div>
                         <div class="shortcut-modal__details">
                           <span class="shortcut-modal__description">{item.description}</span>
                           {item.note && <span class="shortcut-modal__note">{item.note}</span>}
+                          <div class="shortcut-modal__actions">
+                            <button
+                              type="button"
+                              class="shortcut-modal__action-button"
+                              onClick={() => handleStartCapture(item.id)}
+                              disabled={isListening(item.id)}
+                            >
+                              {isListening(item.id) ? 'Listening…' : item.custom ? 'Change' : 'Set custom'}
+                            </button>
+                            <Show when={item.custom}>
+                              <button
+                                type="button"
+                                class="shortcut-modal__action-button"
+                                onClick={() => handleResetShortcut(item.id)}
+                              >
+                                Reset
+                              </button>
+                            </Show>
+                          </div>
+                          <Show when={isListening(item.id) && captureError()}>
+                            {(message) => <p class="shortcut-modal__error">{message()}</p>}
+                          </Show>
                         </div>
                       </li>
                     )}

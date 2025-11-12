@@ -24,10 +24,13 @@ import {
   setTypographyPreset,
   setEditorFontScale,
   setEditorMeasureScale,
+  setColorScheme,
   DEFAULT_EDITOR_FONT_SCALE,
   DEFAULT_EDITOR_MEASURE_SCALE,
+  normalizeColorSchemeId,
   type ThemeMode,
   type TypographyPreset,
+  type ColorSchemeId,
 } from '../state/ui';
 import { refreshBrowserVaultEstimate } from './browser-vault-storage';
 
@@ -55,12 +58,19 @@ function sanitizeTypography(value: string): TypographyPreset {
   return 'editorial-classic';
 }
 
+function sanitizeColorScheme(value: string | undefined): ColorSchemeId {
+  return normalizeColorSchemeId(value);
+}
+
 function applySettings(settings: BrowserVaultSettings): void {
   const themeMode = sanitizeTheme(settings.theme);
   setThemeMode(themeMode);
 
   const preset = sanitizeTypography(settings.typographyPreset);
   setTypographyPreset(preset);
+
+  const scheme = sanitizeColorScheme(settings.colorScheme);
+  setColorScheme(scheme);
 
   const desiredFontScale = Number.isFinite(settings.fontScale)
     ? settings.fontScale

@@ -1,6 +1,7 @@
 import { Component, For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import { searchDocuments } from '../platform/search-service';
 import { openNote } from '../platform/note-reader';
+import { isShortcutEvent } from '../lib/shortcuts';
 
 export type SearchPanelProps = {
   onClose: () => void;
@@ -86,14 +87,20 @@ const SearchPanel: Component<SearchPanelProps> = (props) => {
   };
 
   const handleKeydown = async (event: KeyboardEvent) => {
-    const list = results();
-    if (!list.length && event.key !== 'Escape') {
+    if (isShortcutEvent(event, 'escape')) {
+      event.preventDefault();
+      props.onClose();
       return;
     }
 
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'p') {
+    if (isShortcutEvent(event, 'search-notes')) {
       event.preventDefault();
       inputRef?.focus();
+      return;
+    }
+
+    const list = results();
+    if (!list.length) {
       return;
     }
 
@@ -109,8 +116,6 @@ const SearchPanel: Component<SearchPanelProps> = (props) => {
         event.preventDefault();
         await handleOpen(item.path);
       }
-    } else if (event.key === 'Escape') {
-      props.onClose();
     }
   };
 

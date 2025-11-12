@@ -10,13 +10,14 @@ jazzbb is an offline-first markdown editor / hub that runs entirely in the brows
 - **External change detection**: Single-file sessions poll the opened handle every two seconds and reload changes written by other editors (Chromium browsers only); unsaved edits trigger a warning instead of overwriting.
 - **Typography presets**: Five open-license presets (Editorial Classic, Humanist Tech, Swiss Modern + Display, Bookish Oldstyle, Inclusive Readability) accessible from the header. Presets now restyle only the editor and preview content—UI typography remains unchanged—while still tuning body/headline/code families, numeral styles, and spacing inside the document.
 - **Theme toggle**: Quick sun/moon button switches between light and night modes without refreshing.
+- **Palette picker**: Sample Midnight Jazz, Aurora Glow, Ember Dawn, Cobalt Serenade, or Forest Echo from the new header dropdown; your pick persists per browser profile and syncs with the browser vault.
 - **Safe rendering**: Markdown is parsed with `markdown-it`, math/task lists/footnotes are supported, and DOMPurify sanitises all HTML before display.
 - **Autosave & notices**: Vault notes auto-save after a brief pause and surface success/error toasts; scratch/single-file sessions remain manual and use the Save to file action.
 - **Indexed search**: Worker-backed FlexSearch index updates on load/save, keyboard-friendly overlay (Ctrl/Cmd+P) with highlighted snippets, arrow navigation, and instant note opening.
 - **Outline navigator**: Toggle a live heading tree (Ctrl/Cmd+Shift+O), collapse/expand levels with arrow keys, and jump between sections without leaving the editor.
 - **Collapsible headings**: Fold any heading inline via the new caret control or `Ctrl/Cmd + Alt/Option + K`. Collapsed sections auto-expand when search jumps into them.
 - **Editable titles**: Rename vault notes in the editor header or inline in the sidebar (double-click a note to edit). Names now preserve spacing/casing in browser vault and single-file modes.
-- **Keyboard shortcuts**: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Ctrl/Cmd+Shift+Space` opens the command palette, `Ctrl/Cmd+/` toggles the shortcut help, `Ctrl/Cmd+D` deletes the current line, `Ctrl/Cmd+Shift+H` collapses the top bar, `Ctrl/Cmd+Shift+B` collapses the vault sidebar, and `Esc` closes modals. Sidebar buttons mirror these actions.
+- **Keyboard shortcuts**: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Ctrl/Cmd+K` opens the command palette, `Ctrl/Cmd+/` toggles the shortcut help, `Ctrl/Cmd+D` deletes the current line, `Ctrl/Cmd+Shift+H` collapses the top bar, `Ctrl/Cmd+Shift+B` collapses the vault sidebar, and `Esc` closes modals. Sidebar buttons mirror these actions, and every shortcut can be rebound from the help panel—custom bindings stay in your browser’s storage.
 - **Browser vault**: Seamlessly graduate from a scratch note into an IndexedDB-backed vault, keep notes/config offline, export/import the entire vault as a `.zip`, and save individual notes to disk without leaving the browser vault.
 - **Browser compatibility note**: Non-Chromium browsers surface a warning banner because the File System Access API is unavailable for saving.
 - **Editing coverage**: Headless Puppeteer suites exercise common authoring behaviours (character deletes, paragraph insertion, blockquote wrapping, ordered list conversion, task toggles, heading conversions). Formatting regression tests ensure Markdown constructs (headings, lists, task items, code blocks, images) render consistently.
@@ -96,13 +97,15 @@ Use the selector in the top-right toolbar to switch between the five systems. Ea
 | `Ctrl/Cmd + N`      | Create new note    |
 | `Ctrl/Cmd + S`      | Save active note   |
 | `Ctrl/Cmd + P`      | Open search overlay|
-| `Ctrl/Cmd + Shift + Space` | Open command palette |
+| `Ctrl/Cmd + K` | Open command palette |
 | `Ctrl/Cmd + Shift + O` | Toggle outline panel|
 | `Ctrl/Cmd + Shift + H` | Collapse/expand top bar |
 | `Ctrl/Cmd + Shift + B` | Collapse/expand vault sidebar |
 | `Ctrl/Cmd + Alt/Option + K` | Toggle collapse for the current heading |
 | `Enter` (title field) | Commit header rename |
 | `Esc`               | Close search/overlay|
+
+Open the shortcut panel (`Ctrl/Cmd + /`) to view, customise, or reset every binding. Choose *Set custom* beside any action, press the new keys, and jazzbb will remember the preference for the current browser profile.
 
 ### Roadmap & Ideas
 
