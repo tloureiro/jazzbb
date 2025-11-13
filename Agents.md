@@ -7,7 +7,7 @@
 - **Stack**: SolidJS + Vite + CodeMirror 6; Markdown parsing with `markdown-it` in a Web Worker; DOMPurify for sanitisation; FlexSearch worker for indexing.
 - **State**: `editorStore` manages active path, draft text, preview HTML, and link metadata. `vaultStore` tracks note list, file handles, cached parses, and selection.
 - **File IO**: Use helpers in `src/platform/note-manager.ts` (`createNote`, `renameNote`, `deleteNote`, `saveActiveNote`) to mutate files so caches/search stay in sync.
-- **Keyboard shortcuts**: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Ctrl/Cmd+K` opens the command palette, `Ctrl/Cmd+Shift+H` collapses the top bar, `Ctrl/Cmd+Shift+B` toggles the vault sidebar, `Ctrl/Cmd+Alt+K` folds the current heading, `Esc` closes overlays. Sidebar buttons mirror these actions, and every binding can be remapped from the shortcut modal (Cmd/Ctrl + /); overrides live in local storage per browser profile.
+- **Keyboard shortcuts**: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Ctrl/Cmd+K` opens the command palette, `Ctrl/Cmd+Shift+H` collapses the top bar, `Ctrl/Cmd+Shift+B` toggles the vault sidebar, `Ctrl/Cmd+Alt+K` folds the current heading, `Esc` closes overlays. Sidebar buttons mirror these actions, and every binding can be remapped from the shortcut modal (Cmd/Ctrl + /) by clicking the shortcut chip; overrides live in local storage per browser profile.
 - **Collapsible headings**: Each heading renders a caret toggle; click it or press `Cmd/Ctrl + Alt + K` to fold/unfold the section. Collapsed regions auto-expand when selection or search jumps inside.
 - **Outline panel**: `editorStore` now tracks heading metadata + active heading; toggle with `Ctrl/Cmd+Shift+O` or the header button to jump between sections, collapse/expand levels with arrow keys or the caret, and respect outline hierarchy indentation.
 - **Theme toggle & palettes**: `toggleTheme()` flips between `light` and `dark` via the header sun/moon button, and a companion dropdown lets users pick Midnight Jazz, Aurora Glow, Ember Dawn, Cobalt Serenade, or Forest Echo (stored on `data-color-scheme` and persisted in local storage / browser vault settings). Keep `global.css` palettes updated when new surfaces appear.
@@ -49,3 +49,7 @@ npm run test -- --run
 - Autosave drafts & status toasts
 - Folder hierarchy and drag-drop reordering
 - Search result breadcrumbs & range highlighting
+- **Default palette**: Cobalt Serenade is the baseline color scheme everywhere. Older snapshots may still have Midnight Jazz; migration logic in `browser-vault-session` updates them once, so don’t reintroduce the old default.
+- **Palette persistence**: `setColorScheme` writes to both localStorage and browser-vault settings—call it for any UI that modifies the palette so the preference survives reloads without `?e`.
+- **Shortcut modal UX**: The “Set custom” button is gone; instead, clicking a shortcut chip starts capture mode, and a small “Reset” link appears only when a custom mapping exists. Keep chips and descriptions vertically aligned (flex row with centered items).
+- **macOS conflicts**: Avoid using bare `Cmd+N`, `Cmd+O`, etc. for new global shortcuts; Chrome/macOS intercepts them. Prefer combos like `Ctrl+Cmd+...` that don’t overlap with OS defaults.

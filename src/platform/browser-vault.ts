@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { deriveTitle } from './vault-loader';
+import { COLOR_SCHEME_VERSION, DEFAULT_COLOR_SCHEME_ID } from '../state/ui';
 
 export type BrowserVaultNote = {
   path: string;
@@ -21,6 +22,7 @@ export type BrowserVaultSettings = {
   fontScale: number;
   measureScale: number;
   colorScheme: string;
+  colorSchemeVersion?: number;
 };
 
 const DB_NAME = 'jazzbb-browser-vault';
@@ -35,7 +37,8 @@ const DEFAULT_SETTINGS: BrowserVaultSettings = {
   typographyPreset: 'editorial-classic',
   fontScale: 1.40625,
   measureScale: 1,
-  colorScheme: 'midnight-jazz',
+  colorScheme: DEFAULT_COLOR_SCHEME_ID,
+  colorSchemeVersion: COLOR_SCHEME_VERSION,
 };
 
 type MetaRecord<T = unknown> = { key: string; value: T };
@@ -144,7 +147,12 @@ async function readSettings(store: IDBObjectStore): Promise<BrowserVaultSettings
   try {
     const record = (await requestAsPromise(store.get(META_SETTINGS_KEY))) as MetaRecord<BrowserVaultSettings> | undefined;
     if (record?.value) {
-      return { ...DEFAULT_SETTINGS, ...record.value };
+      const stored = record.value;
+      const version =
+        typeof stored.colorSchemeVersion === 'number' && Number.isFinite(stored.colorSchemeVersion)
+          ? stored.colorSchemeVersion
+          : 0;
+      return { ...DEFAULT_SETTINGS, ...stored, colorSchemeVersion: version };
     }
   } catch (error) {
     console.error('Failed to read browser vault settings', error);

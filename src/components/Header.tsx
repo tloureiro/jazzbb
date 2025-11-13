@@ -32,7 +32,7 @@ import {
   colorScheme,
   setColorScheme,
   colorSchemeOptions,
-  DEFAULT_COLOR_SCHEME_ID,
+  COLOR_SCHEME_VERSION,
   type ColorSchemeId,
 } from '../state/ui';
 import { openSingleFile } from '../platform/open-file';
@@ -74,8 +74,6 @@ const Header: Component = () => {
   );
   const isScratchMode = createMemo(() => workspaceStore.mode() === 'scratch');
   const isBrowserMode = createMemo(() => workspaceStore.mode() === 'browser');
-  const typographySelectionSet = createMemo(() => typographyPreset() !== 'editorial-classic');
-  const colorSchemeSelectionSet = createMemo(() => colorScheme() !== DEFAULT_COLOR_SCHEME_ID);
   const canSave = createMemo(() => {
     const mode = workspaceStore.mode();
     if (mode === 'scratch') {
@@ -104,13 +102,13 @@ const Header: Component = () => {
   let importInputRef: HTMLInputElement | undefined;
 
   const persistBrowserSettings = () => {
-    if (!isBrowserVaultMode()) return;
     updateBrowserVaultSettings({
       theme: currentTheme(),
       typographyPreset: typographyPreset(),
       fontScale: editorFontScale(),
       measureScale: editorMeasureScale(),
       colorScheme: colorScheme(),
+      colorSchemeVersion: COLOR_SCHEME_VERSION,
     }).catch((error) => {
       console.error('Failed to persist browser vault settings', error);
     });
@@ -711,11 +709,7 @@ const Header: Component = () => {
           >
             Outline
           </button>
-          <label
-            class="select-field typography-select"
-            data-placeholder="Typography style"
-            data-has-value={typographySelectionSet() ? 'true' : 'false'}
-          >
+          <label class="select-field typography-select" data-placeholder="Typography style">
             <span class="sr-only">Typography preset</span>
             <select value={typographyPreset()} onInput={handlePresetChange}>
               <option value="editorial-classic">Editorial Classic</option>
@@ -725,11 +719,7 @@ const Header: Component = () => {
               <option value="inclusive-readability">Inclusive Readability</option>
             </select>
           </label>
-          <label
-            class="select-field palette-select"
-            data-placeholder="Color style"
-            data-has-value={colorSchemeSelectionSet() ? 'true' : 'false'}
-          >
+          <label class="select-field palette-select" data-placeholder="Color palette">
             <span class="sr-only">Color scheme</span>
             <select value={colorScheme()} onInput={handleColorSchemeChange}>
               <For each={colorSchemeOptions}>

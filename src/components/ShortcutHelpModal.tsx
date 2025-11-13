@@ -149,8 +149,8 @@ const ShortcutHelpModal: Component<ShortcutHelpModalProps> = (props) => {
             </button>
           </header>
           <p class="shortcut-modal__intro">
-            Shortcuts below are tailored for {platformName}. Click “Set custom” to record your own binding—saved only in
-            this browser.
+            Shortcuts below are tailored for {platformName}. Click any shortcut chip to record your own binding—saved
+            only in this browser.
           </p>
           <div class="shortcut-modal__controls">
             <button type="button" class="secondary" onClick={handleResetAll}>
@@ -169,31 +169,27 @@ const ShortcutHelpModal: Component<ShortcutHelpModalProps> = (props) => {
                         data-custom={item.custom ? 'true' : 'false'}
                         data-editing={isListening(item.id) ? 'true' : 'false'}
                       >
-                        <div class="shortcut-modal__keys" aria-live="polite">
-                          {isListening(item.id) ? 'Press new shortcut…' : item.keys}
-                        </div>
+                        <button
+                          type="button"
+                          class="shortcut-modal__keys-button"
+                          onClick={() => handleStartCapture(item.id)}
+                          disabled={isListening(item.id)}
+                          aria-live="polite"
+                        >
+                          {isListening(item.id) ? 'Press new shortcut…' : item.keys || 'Set custom shortcut'}
+                        </button>
                         <div class="shortcut-modal__details">
                           <span class="shortcut-modal__description">{item.description}</span>
                           {item.note && <span class="shortcut-modal__note">{item.note}</span>}
-                          <div class="shortcut-modal__actions">
+                          <Show when={item.custom && !isListening(item.id)}>
                             <button
                               type="button"
-                              class="shortcut-modal__action-button"
-                              onClick={() => handleStartCapture(item.id)}
-                              disabled={isListening(item.id)}
+                              class="shortcut-modal__reset-button"
+                              onClick={() => handleResetShortcut(item.id)}
                             >
-                              {isListening(item.id) ? 'Listening…' : item.custom ? 'Change' : 'Set custom'}
+                              Reset
                             </button>
-                            <Show when={item.custom}>
-                              <button
-                                type="button"
-                                class="shortcut-modal__action-button"
-                                onClick={() => handleResetShortcut(item.id)}
-                              >
-                                Reset
-                              </button>
-                            </Show>
-                          </div>
+                          </Show>
                           <Show when={isListening(item.id) && captureError()}>
                             {(message) => <p class="shortcut-modal__error">{message()}</p>}
                           </Show>

@@ -105,7 +105,7 @@ Use the selector in the top-right toolbar to switch between the five systems. Ea
 | `Enter` (title field) | Commit header rename |
 | `Esc`               | Close search/overlay|
 
-Open the shortcut panel (`Ctrl/Cmd + /`) to view, customise, or reset every binding. Choose *Set custom* beside any action, press the new keys, and jazzbb will remember the preference for the current browser profile.
+Open the shortcut panel (`Ctrl/Cmd + /`) to view, customise, or reset every binding. Click any shortcut chip to record a new binding, then press the keys you want—jazzbb will remember the preference for the current browser profile.
 
 ### Roadmap & Ideas
 

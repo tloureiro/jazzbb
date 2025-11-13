@@ -84,17 +84,20 @@ type ColorSchemeDefinition = {
 };
 
 const COLOR_SCHEME_STORAGE_KEY = 'jazzbb::color-scheme';
+const COLOR_SCHEME_MIGRATION_KEY = 'jazzbb::color-scheme::migrated';
 export const DEFAULT_COLOR_SCHEME_ID: ColorSchemeId = 'cobalt-serenade';
+export const COLOR_SCHEME_VERSION = 1;
 
 const COLOR_SCHEME_OPTIONS: readonly ColorSchemeDefinition[] = [
+  { id: 'cobalt-serenade', label: 'Cobalt Serenade', description: 'Midnight blues and electric cyan accents' },
   { id: 'midnight-jazz', label: 'Midnight Jazz', description: 'Violet neon with smoky blues' },
   { id: 'aurora-glow', label: 'Aurora Glow', description: 'Teal + mint gradients inspired by northern skies' },
   { id: 'ember-dawn', label: 'Ember Dawn', description: 'Soft ambers with copper cues' },
-  { id: 'cobalt-serenade', label: 'Cobalt Serenade', description: 'Midnight blues and electric cyan accents' },
   { id: 'forest-echo', label: 'Forest Echo', description: 'Earthy greens with moss highlights' },
 ];
 
 const COLOR_SCHEME_IDS = new Set<ColorSchemeId>(COLOR_SCHEME_OPTIONS.map((option) => option.id));
+const LEGACY_DEFAULT_COLOR_SCHEME: ColorSchemeId = 'midnight-jazz';
 
 export function normalizeColorSchemeId(value: string | null | undefined): ColorSchemeId {
   if (typeof value === 'string' && COLOR_SCHEME_IDS.has(value as ColorSchemeId)) {
@@ -109,7 +112,26 @@ function readColorSchemePreference(): ColorSchemeId {
   }
   try {
     const stored = window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY);
-    return normalizeColorSchemeId(stored);
+    const normalized = normalizeColorSchemeId(stored);
+    const hasMigrated = window.localStorage.getItem(COLOR_SCHEME_MIGRATION_KEY) === '1';
+    if (
+      stored === LEGACY_DEFAULT_COLOR_SCHEME &&
+      normalized === LEGACY_DEFAULT_COLOR_SCHEME &&
+      DEFAULT_COLOR_SCHEME_ID !== LEGACY_DEFAULT_COLOR_SCHEME &&
+      !hasMigrated
+    ) {
+      try {
+        window.localStorage.setItem(COLOR_SCHEME_STORAGE_KEY, DEFAULT_COLOR_SCHEME_ID);
+        window.localStorage.setItem(COLOR_SCHEME_MIGRATION_KEY, '1');
+      } catch (error) {
+        console.warn('Failed to migrate color scheme preference', error);
+      }
+      return DEFAULT_COLOR_SCHEME_ID;
+    }
+    if (!hasMigrated) {
+      window.localStorage.setItem(COLOR_SCHEME_MIGRATION_KEY, '1');
+    }
+    return normalized;
   } catch (error) {
     console.warn('Failed to read color scheme preference', error);
     return DEFAULT_COLOR_SCHEME_ID;
