@@ -1,5 +1,6 @@
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount, type Accessor, type Component } from 'solid-js';
 import { Portal } from 'solid-js/web';
+import { getShortcutLabel, isShortcutEvent, subscribeToShortcutChanges } from '../lib/shortcuts';
 
 export type CommandPaletteCommand = {
   id: string;
@@ -27,7 +28,13 @@ function normalize(text: string): string {
 const CommandPalette: Component<CommandPaletteProps> = (props) => {
   const [query, setQuery] = createSignal('');
   const [highlightedIndex, setHighlightedIndex] = createSignal(0);
+  const [shortcutsVersion, setShortcutsVersion] = createSignal(0);
   let inputRef: HTMLInputElement | undefined;
+  onCleanup(
+    subscribeToShortcutChanges(() => {
+      setShortcutsVersion((value) => value + 1);
+    }),
+  );
 
   const filteredCommands = createMemo(() => {
     const value = normalize(query());
@@ -66,13 +73,13 @@ const CommandPalette: Component<CommandPaletteProps> = (props) => {
   };
 
   const handleKeydown = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') {
+    if (isShortcutEvent(event, 'escape')) {
       event.preventDefault();
       props.onClose();
       return;
     }
 
-    if ((event.metaKey || event.ctrlKey) && event.shiftKey && (event.key === ' ' || event.code === 'Space')) {
+    if (isShortcutEvent(event, 'open-command-palette')) {
       event.preventDefault();
       props.onClose();
       return;
@@ -109,6 +116,11 @@ const CommandPalette: Component<CommandPaletteProps> = (props) => {
     window.addEventListener('keydown', handleKeydown);
   });
 
+  const escapeLabel = createMemo(() => {
+    shortcutsVersion();
+    return getShortcutLabel('escape') || 'Esc';
+  });
+
   onCleanup(() => {
     window.removeEventListener('keydown', handleKeydown);
   });
@@ -127,7 +139,7 @@ const CommandPalette: Component<CommandPaletteProps> = (props) => {
               aria-label="Command palette input"
             />
             <button type="button" onClick={() => props.onClose()} aria-label="Close command palette">
-              Esc
+              {escapeLabel()}
             </button>
           </div>
           <Show

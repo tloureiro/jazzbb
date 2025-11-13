@@ -20,7 +20,9 @@
 ## Editing Experience
 - Single live-edit pane (no split preview). Markdown renders inline while typing (headings, emphasis, math, footnotes, task lists, etc.).
 - Support strikethrough, inline code, math (block + inline), footnotes, and task lists.
-- No Vim/Emacs modes. Keyboard shortcuts: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Esc` close overlays; extend the set cautiously and keep behaviour discoverable.
+- No Vim/Emacs modes. Keyboard shortcuts: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Ctrl/Cmd+K` opens the command palette, `Esc` close overlays; extend the set cautiously and keep behaviour discoverable.
+- Shortcut help modal must expose every binding and let users remap/resets combos; overrides persist per-browser (localStorage) and never sync to disk.
+- Provide a color-scheme dropdown in the header with five creative palettes (Midnight Jazz, Aurora Glow, Ember Dawn, Cobalt Serenade, Forest Echo). Selection updates `data-color-scheme`, persists in local storage, and syncs via browser vault settings.
 - Autosave after inactivity (vault mode only); manual save updates status toasts. Scratch/single-file sessions prompt for a destination and rely on manual saves. Session-only state; refresh is acceptable during development.
 
 - Layout inspired by contemporary note apps and IDEs: collapsible sidebar for files when a vault is mounted and a central live editor. Single-file mode hides vault actions but keeps the same editor surface.

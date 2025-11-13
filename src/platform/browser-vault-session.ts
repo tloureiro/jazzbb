@@ -24,10 +24,15 @@ import {
   setTypographyPreset,
   setEditorFontScale,
   setEditorMeasureScale,
+  setColorScheme,
   DEFAULT_EDITOR_FONT_SCALE,
   DEFAULT_EDITOR_MEASURE_SCALE,
+  DEFAULT_COLOR_SCHEME_ID,
+  COLOR_SCHEME_VERSION,
+  normalizeColorSchemeId,
   type ThemeMode,
   type TypographyPreset,
+  type ColorSchemeId,
 } from '../state/ui';
 import { refreshBrowserVaultEstimate } from './browser-vault-storage';
 
@@ -55,12 +60,26 @@ function sanitizeTypography(value: string): TypographyPreset {
   return 'editorial-classic';
 }
 
+function sanitizeColorScheme(value: string | undefined): ColorSchemeId {
+  return normalizeColorSchemeId(value);
+}
+
 function applySettings(settings: BrowserVaultSettings): void {
   const themeMode = sanitizeTheme(settings.theme);
   setThemeMode(themeMode);
 
   const preset = sanitizeTypography(settings.typographyPreset);
   setTypographyPreset(preset);
+
+  let scheme = sanitizeColorScheme(settings.colorScheme);
+  const version = typeof settings.colorSchemeVersion === 'number' ? settings.colorSchemeVersion : 0;
+  if (version < COLOR_SCHEME_VERSION && scheme === 'midnight-jazz') {
+    scheme = DEFAULT_COLOR_SCHEME_ID;
+    setBrowserVaultSettings({ colorScheme: scheme, colorSchemeVersion: COLOR_SCHEME_VERSION }).catch((error) => {
+      console.warn('Failed to migrate color scheme settings', error);
+    });
+  }
+  setColorScheme(scheme);
 
   const desiredFontScale = Number.isFinite(settings.fontScale)
     ? settings.fontScale

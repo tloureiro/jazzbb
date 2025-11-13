@@ -1,4 +1,4 @@
-import { Component, Show, createEffect, createMemo, onCleanup, onMount } from 'solid-js';
+import { Component, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import { editorStore } from '../state/editor';
 import CodeEditor from './CodeEditor';
 import { parseNote } from '../platform/parser-service';
@@ -10,7 +10,9 @@ import { workspaceStore, isVaultMode } from '../state/workspace';
 import { renameNote } from '../platform/note-manager';
 import { SCRATCH_TITLE } from '../state/editor';
 import { closeActiveDocument } from '../lib/documents';
-import { getShortcutLabel } from '../lib/shortcuts';
+import { getShortcutLabel, isShortcutEvent, subscribeToShortcutChanges } from '../lib/shortcuts';
+import { deleteCurrentLine } from '../lib/editorShortcuts';
+import type { CollapseCommandSet } from '../extensions/collapsibleHeading';
 
 const EditorPane: Component = () => {
   let parseTimer: number | undefined;
@@ -21,8 +23,35 @@ const EditorPane: Component = () => {
   let containerRef: HTMLDivElement | undefined;
   let findModeActive = false;
   let plainEditorRef: HTMLTextAreaElement | undefined;
+  const [shortcutsVersion, setShortcutsVersion] = createSignal(0);
+  onCleanup(
+    subscribeToShortcutChanges(() => {
+      setShortcutsVersion((value) => value + 1);
+    }),
+  );
 
   const plainMode = isPlainMarkdownMode;
+  const formatShortcutTitle = (label: string, id: Parameters<typeof getShortcutLabel>[0]) => {
+    shortcutsVersion();
+    const keys = getShortcutLabel(id);
+    return keys ? `${label} (${keys})` : label;
+  };
+
+  const canCloseDocument = createMemo(() => {
+    const mode = workspaceStore.mode();
+    if (mode === 'single') return true;
+    if ((mode === 'browser' || mode === 'vault') && editorStore.activePath()) return true;
+    if (mode === 'scratch' && editorStore.activePath()) return true;
+    return false;
+  });
+
+  const handleCloseDocument = async () => {
+    const result = await closeActiveDocument();
+    if (result.status === 'closed') {
+      const message = result.context === 'single' ? 'Closed file' : 'Closed note';
+      showToast(message, 'info');
+    }
+  };
 
   const handleChange = (value: string) => {
     editorStore.setDraft(value);
@@ -60,16 +89,86 @@ const EditorPane: Component = () => {
     handleChange(target.value);
   };
 
+  const deletePlaintextLine = (): boolean => {
+    if (!plainEditorRef) {
+      return false;
+    }
+    const target = plainEditorRef;
+    const value = target.value ?? '';
+    const selectionStart = target.selectionStart ?? 0;
+    const selectionEnd = target.selectionEnd ?? selectionStart;
+
+    if (selectionStart !== selectionEnd) {
+      const next = value.slice(0, selectionStart) + value.slice(selectionEnd);
+      target.value = next;
+      target.setSelectionRange(selectionStart, selectionStart);
+      handleChange(next);
+      return true;
+    }
+
+    if (value.length === 0) {
+      return false;
+    }
+
+    let lineStart = selectionStart;
+    while (lineStart > 0 && value[lineStart - 1] !== '\n') {
+      lineStart -= 1;
+    }
+
+    let lineEnd = selectionStart;
+    while (lineEnd < value.length && value[lineEnd] !== '\n') {
+      lineEnd += 1;
+    }
+    if (lineEnd < value.length) {
+      lineEnd += 1;
+    }
+
+    const next = value.slice(0, lineStart) + value.slice(lineEnd);
+    const cursor = Math.min(lineStart, next.length);
+    target.value = next;
+    target.setSelectionRange(cursor, cursor);
+    handleChange(next);
+    return true;
+  };
+
+  const deleteActiveLine = (): boolean => {
+    if (plainMode()) {
+      return deletePlaintextLine();
+    }
+    const editor = editorStore.getEditor();
+    if (!editor) {
+      return false;
+    }
+    return deleteCurrentLine(editor);
+  };
+
+  const toggleHeadingCollapseShortcut = (): boolean => {
+    if (plainMode()) {
+      return false;
+    }
+    const editor = editorStore.getEditor();
+    if (!editor) {
+      return false;
+    }
+    const commands = editor.commands as typeof editor.commands & Partial<CollapseCommandSet>;
+    if (typeof commands.toggleHeadingCollapse !== 'function') {
+      return false;
+    }
+    const result = commands.toggleHeadingCollapse();
+    if (result) {
+      editor.commands.focus();
+    }
+    return result;
+  };
+
   const handleKeydown = async (event: KeyboardEvent) => {
-    const modifier = event.metaKey || event.ctrlKey;
-    const key = event.key.toLowerCase();
-    if (modifier && event.altKey && key === 'w') {
+    if (isShortcutEvent(event, 'close-document')) {
       event.preventDefault();
       await handleCloseDocument();
       return;
     }
 
-    if (modifier && event.altKey && key === 'm') {
+    if (isShortcutEvent(event, 'toggle-plain-markdown')) {
       event.preventDefault();
       togglePlainMarkdownMode();
       queueMicrotask(() => {
@@ -82,12 +181,30 @@ const EditorPane: Component = () => {
       return;
     }
 
-    if (modifier && key === 's') {
+    if (isShortcutEvent(event, 'save-note')) {
       event.preventDefault();
       await saveActiveNote();
       return;
     }
 
+    if (isShortcutEvent(event, 'toggle-heading-collapse')) {
+      const handled = toggleHeadingCollapseShortcut();
+      if (handled) {
+        event.preventDefault();
+      }
+      return;
+    }
+
+    if (isShortcutEvent(event, 'delete-line')) {
+      const handled = deleteActiveLine();
+      if (handled) {
+        event.preventDefault();
+      }
+      return;
+    }
+
+    const modifier = event.metaKey || event.ctrlKey;
+    const key = event.key.toLowerCase();
     if (modifier && key === 'f') {
       findModeActive = true;
       editorStore.requestAutoExpandOnNextSelection();
@@ -380,23 +497,3 @@ const EditorPane: Component = () => {
 };
 
 export default EditorPane;
-  const formatShortcutTitle = (label: string, id: Parameters<typeof getShortcutLabel>[0]) => {
-    const keys = getShortcutLabel(id);
-    return keys ? `${label} (${keys})` : label;
-  };
-
-  const canCloseDocument = createMemo(() => {
-    const mode = workspaceStore.mode();
-    if (mode === 'single') return true;
-    if ((mode === 'browser' || mode === 'vault') && editorStore.activePath()) return true;
-    if (mode === 'scratch' && editorStore.activePath()) return true;
-    return false;
-  });
-
-  const handleCloseDocument = async () => {
-    const result = await closeActiveDocument();
-    if (result.status === 'closed') {
-      const message = result.context === 'single' ? 'Closed file' : 'Closed note';
-      showToast(message, 'info');
-    }
-  };

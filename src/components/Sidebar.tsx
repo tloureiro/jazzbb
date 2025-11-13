@@ -1,15 +1,21 @@
-import { Component, For, Show, createEffect, createSignal } from 'solid-js';
+import { Component, For, Show, createEffect, createSignal, onCleanup } from 'solid-js';
 import { vaultStore } from '../state/vault';
 import { openNote } from '../platform/note-reader';
 import { createNote, deleteNote, renameNote } from '../platform/note-manager';
 import { isVaultMode } from '../state/workspace';
 import { setSidebarCollapsed } from '../state/ui';
-import { getShortcutLabel } from '../lib/shortcuts';
+import { getShortcutLabel, subscribeToShortcutChanges } from '../lib/shortcuts';
 
 const Sidebar: Component = () => {
   const notes = () => vaultStore.state.notes;
   const [editingPath, setEditingPath] = createSignal<string | undefined>();
   const [editingValue, setEditingValue] = createSignal('');
+  const [shortcutsVersion, setShortcutsVersion] = createSignal(0);
+  onCleanup(
+    subscribeToShortcutChanges(() => {
+      setShortcutsVersion((value) => value + 1);
+    }),
+  );
   let renameInputRef: HTMLInputElement | undefined;
   let suppressBlurCommit = false;
 
@@ -19,6 +25,7 @@ const Sidebar: Component = () => {
   };
 
   const formatShortcutTitle = (label: string, id: Parameters<typeof getShortcutLabel>[0]) => {
+    shortcutsVersion();
     const keys = getShortcutLabel(id);
     return keys ? `${label} (${keys})` : label;
   };

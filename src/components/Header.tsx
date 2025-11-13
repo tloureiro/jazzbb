@@ -1,4 +1,4 @@
-import { Component, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
+import { Component, Show, For, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import { supportsFileSystemAccess, requestVault } from '../platform/fs';
 import { loadVaultContents } from '../platform/vault-loader';
 import { saveActiveNote, exportActiveNoteToFile } from '../platform/save-note';
@@ -29,6 +29,11 @@ import {
   toggleSidebarCollapsed,
   isPlainMarkdownMode,
   togglePlainMarkdownMode,
+  colorScheme,
+  setColorScheme,
+  colorSchemeOptions,
+  COLOR_SCHEME_VERSION,
+  type ColorSchemeId,
 } from '../state/ui';
 import { openSingleFile } from '../platform/open-file';
 import { workspaceStore, isVaultMode, isBrowserVaultMode } from '../state/workspace';
@@ -47,7 +52,7 @@ import {
   refreshBrowserVaultEstimate,
   type StorageEstimate,
 } from '../platform/browser-vault-storage';
-import { getShortcutLabel } from '../lib/shortcuts';
+import { getShortcutLabel, isShortcutEvent, subscribeToShortcutChanges } from '../lib/shortcuts';
 import { closeActiveDocument } from '../lib/documents';
 
 const Header: Component = () => {
@@ -61,6 +66,12 @@ const Header: Component = () => {
   const [showUnsupportedNotice, setShowUnsupportedNotice] = createSignal(!fileSystemSupported);
   const [storageEstimate, setStorageEstimate] = createSignal<StorageEstimate | null>(null);
   const [storageDismissed, setStorageDismissed] = createSignal(false);
+  const [shortcutsVersion, setShortcutsVersion] = createSignal(0);
+  onCleanup(
+    subscribeToShortcutChanges(() => {
+      setShortcutsVersion((value) => value + 1);
+    }),
+  );
   const isScratchMode = createMemo(() => workspaceStore.mode() === 'scratch');
   const isBrowserMode = createMemo(() => workspaceStore.mode() === 'browser');
   const canSave = createMemo(() => {
@@ -83,6 +94,7 @@ const Header: Component = () => {
   });
 
   const formatShortcutTitle = (label: string, id: Parameters<typeof getShortcutLabel>[0]) => {
+    shortcutsVersion();
     const keys = getShortcutLabel(id);
     return keys ? `${label} (${keys})` : label;
   };
@@ -90,12 +102,13 @@ const Header: Component = () => {
   let importInputRef: HTMLInputElement | undefined;
 
   const persistBrowserSettings = () => {
-    if (!isBrowserVaultMode()) return;
     updateBrowserVaultSettings({
       theme: currentTheme(),
       typographyPreset: typographyPreset(),
       fontScale: editorFontScale(),
       measureScale: editorMeasureScale(),
+      colorScheme: colorScheme(),
+      colorSchemeVersion: COLOR_SCHEME_VERSION,
     }).catch((error) => {
       console.error('Failed to persist browser vault settings', error);
     });
@@ -166,6 +179,12 @@ const Header: Component = () => {
   const handlePresetChange = (event: Event) => {
     const target = event.currentTarget as HTMLSelectElement;
     setTypographyPreset(target.value as TypographyPreset);
+    persistBrowserSettings();
+  };
+
+  const handleColorSchemeChange = (event: Event) => {
+    const target = event.currentTarget as HTMLSelectElement;
+    setColorScheme(target.value as ColorSchemeId);
     persistBrowserSettings();
   };
 
@@ -333,6 +352,7 @@ const Header: Component = () => {
   };
 
   const commandItems = createMemo<ReadonlyArray<CommandPaletteCommand>>(() => {
+    shortcutsVersion();
     const themeMode = currentTheme();
     const outlineActive = outlineVisible();
     const headerIsCollapsed = headerCollapsed();
@@ -474,59 +494,84 @@ const Header: Component = () => {
   });
 
   const handleKeydown = async (event: KeyboardEvent) => {
-    if (
-      (event.metaKey || event.ctrlKey) &&
-      event.shiftKey &&
-      (event.key === ' ' || event.key === 'Spacebar' || event.code === 'Space')
-    ) {
+    if (isShortcutEvent(event, 'open-command-palette')) {
       event.preventDefault();
       setShowSearch(false);
       setShowCommandPalette(true);
       return;
     }
 
-    if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'h') {
+    if (isShortcutEvent(event, 'toggle-top-bar')) {
       event.preventDefault();
       toggleHeaderCollapsed();
       return;
     }
 
-    if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'b') {
+    if (isShortcutEvent(event, 'toggle-sidebar')) {
       if (!isVaultMode()) return;
       event.preventDefault();
       toggleSidebarCollapsed();
       return;
     }
 
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+    if (isShortcutEvent(event, 'save-note')) {
       event.preventDefault();
       await handleSave();
-    } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'p') {
+      return;
+    }
+
+    if (isShortcutEvent(event, 'search-notes')) {
       if (!isVaultMode()) return;
       event.preventDefault();
       setShowSearch(true);
-    } else if ((event.metaKey || event.ctrlKey) && event.altKey && event.key.toLowerCase() === 'o') {
+      return;
+    }
+
+    if (isShortcutEvent(event, 'open-file')) {
       event.preventDefault();
       await handleOpenFile();
-    } else if ((event.metaKey || event.ctrlKey) && event.altKey && event.key.toLowerCase() === 'g') {
+      return;
+    }
+
+    if (isShortcutEvent(event, 'toggle-grammarly')) {
       event.preventDefault();
       toggleGrammarlySuppression();
-    } else if ((event.metaKey || event.ctrlKey) && event.altKey && event.key.toLowerCase() === 'w') {
+      return;
+    }
+
+    if (isShortcutEvent(event, 'close-document')) {
       event.preventDefault();
       await handleCloseDocument();
-    } else if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'o') {
+      return;
+    }
+
+    if (isShortcutEvent(event, 'toggle-outline')) {
       event.preventDefault();
       toggleOutlineVisibility();
-    } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'n') {
+      return;
+    }
+
+    if (isShortcutEvent(event, 'new-note')) {
       if (!isVaultMode()) return;
       event.preventDefault();
       await createNote();
-    } else if ((event.metaKey || event.ctrlKey) && (event.key === '/' || event.key === '?')) {
+      return;
+    }
+
+    if (isShortcutEvent(event, 'open-shortcuts')) {
       event.preventDefault();
       setShowShortcuts((prev) => !prev);
-    } else if (event.key === 'Escape') {
-      setShowSearch(false);
-      setShowCommandPalette(false);
+      return;
+    }
+
+    if (isShortcutEvent(event, 'escape')) {
+      event.preventDefault();
+      if (showSearch()) {
+        setShowSearch(false);
+      }
+      if (showCommandPalette()) {
+        setShowCommandPalette(false);
+      }
     }
   };
 
@@ -664,7 +709,7 @@ const Header: Component = () => {
           >
             Outline
           </button>
-          <label class="typography-select">
+          <label class="select-field typography-select" data-placeholder="Typography style">
             <span class="sr-only">Typography preset</span>
             <select value={typographyPreset()} onInput={handlePresetChange}>
               <option value="editorial-classic">Editorial Classic</option>
@@ -672,6 +717,16 @@ const Header: Component = () => {
               <option value="swiss-modern">Swiss Modern + Display</option>
               <option value="bookish-oldstyle">Bookish Oldstyle</option>
               <option value="inclusive-readability">Inclusive Readability</option>
+            </select>
+          </label>
+          <label class="select-field palette-select" data-placeholder="Color palette">
+            <span class="sr-only">Color scheme</span>
+            <select value={colorScheme()} onInput={handleColorSchemeChange}>
+              <For each={colorSchemeOptions}>
+                {(option) => (
+                  <option value={option.id}>{option.label}</option>
+                )}
+              </For>
             </select>
           </label>
 

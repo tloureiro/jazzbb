@@ -75,6 +75,79 @@ function applyTypographyPreset(preset: TypographyPreset) {
 
 applyTypographyPreset(typographyPresetSignal());
 
+export type ColorSchemeId = 'midnight-jazz' | 'aurora-glow' | 'ember-dawn' | 'cobalt-serenade' | 'forest-echo';
+
+type ColorSchemeDefinition = {
+  id: ColorSchemeId;
+  label: string;
+  description: string;
+};
+
+const COLOR_SCHEME_STORAGE_KEY = 'jazzbb::color-scheme';
+const COLOR_SCHEME_MIGRATION_KEY = 'jazzbb::color-scheme::migrated';
+export const DEFAULT_COLOR_SCHEME_ID: ColorSchemeId = 'cobalt-serenade';
+export const COLOR_SCHEME_VERSION = 1;
+
+const COLOR_SCHEME_OPTIONS: readonly ColorSchemeDefinition[] = [
+  { id: 'cobalt-serenade', label: 'Cobalt Serenade', description: 'Midnight blues and electric cyan accents' },
+  { id: 'midnight-jazz', label: 'Midnight Jazz', description: 'Violet neon with smoky blues' },
+  { id: 'aurora-glow', label: 'Aurora Glow', description: 'Teal + mint gradients inspired by northern skies' },
+  { id: 'ember-dawn', label: 'Ember Dawn', description: 'Soft ambers with copper cues' },
+  { id: 'forest-echo', label: 'Forest Echo', description: 'Earthy greens with moss highlights' },
+];
+
+const COLOR_SCHEME_IDS = new Set<ColorSchemeId>(COLOR_SCHEME_OPTIONS.map((option) => option.id));
+const LEGACY_DEFAULT_COLOR_SCHEME: ColorSchemeId = 'midnight-jazz';
+
+export function normalizeColorSchemeId(value: string | null | undefined): ColorSchemeId {
+  if (typeof value === 'string' && COLOR_SCHEME_IDS.has(value as ColorSchemeId)) {
+    return value as ColorSchemeId;
+  }
+  return DEFAULT_COLOR_SCHEME_ID;
+}
+
+function readColorSchemePreference(): ColorSchemeId {
+  if (typeof window === 'undefined') {
+    return DEFAULT_COLOR_SCHEME_ID;
+  }
+  try {
+    const stored = window.localStorage.getItem(COLOR_SCHEME_STORAGE_KEY);
+    const normalized = normalizeColorSchemeId(stored);
+    const hasMigrated = window.localStorage.getItem(COLOR_SCHEME_MIGRATION_KEY) === '1';
+    if (
+      stored === LEGACY_DEFAULT_COLOR_SCHEME &&
+      normalized === LEGACY_DEFAULT_COLOR_SCHEME &&
+      DEFAULT_COLOR_SCHEME_ID !== LEGACY_DEFAULT_COLOR_SCHEME &&
+      !hasMigrated
+    ) {
+      try {
+        window.localStorage.setItem(COLOR_SCHEME_STORAGE_KEY, DEFAULT_COLOR_SCHEME_ID);
+        window.localStorage.setItem(COLOR_SCHEME_MIGRATION_KEY, '1');
+      } catch (error) {
+        console.warn('Failed to migrate color scheme preference', error);
+      }
+      return DEFAULT_COLOR_SCHEME_ID;
+    }
+    if (!hasMigrated) {
+      window.localStorage.setItem(COLOR_SCHEME_MIGRATION_KEY, '1');
+    }
+    return normalized;
+  } catch (error) {
+    console.warn('Failed to read color scheme preference', error);
+    return DEFAULT_COLOR_SCHEME_ID;
+  }
+}
+
+const [colorSchemeSignal, setColorSchemeSignal] = createSignal<ColorSchemeId>(readColorSchemePreference());
+
+function applyColorScheme(scheme: ColorSchemeId) {
+  if (typeof document !== 'undefined' && document.documentElement) {
+    document.documentElement.dataset.colorScheme = scheme;
+  }
+}
+
+applyColorScheme(colorSchemeSignal());
+
 function applyTheme(mode: ThemeMode) {
   if (typeof document === 'undefined' || !document.documentElement) return;
   if (mode === 'system') {
@@ -95,6 +168,23 @@ export function setThemeMode(mode: ThemeMode): void {
 }
 
 export const typographyPreset = typographyPresetSignal;
+export const colorScheme = colorSchemeSignal;
+export const colorSchemeOptions = COLOR_SCHEME_OPTIONS;
+
+export function setColorScheme(scheme: ColorSchemeId): void {
+  const normalized = normalizeColorSchemeId(scheme);
+  setColorSchemeSignal(() => {
+    applyColorScheme(normalized);
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(COLOR_SCHEME_STORAGE_KEY, normalized);
+      } catch (error) {
+        console.warn('Failed to persist color scheme preference', error);
+      }
+    }
+    return normalized;
+  });
+}
 
 function applyHeaderCollapsed(collapsed: boolean) {
   if (typeof document !== 'undefined' && document.documentElement) {

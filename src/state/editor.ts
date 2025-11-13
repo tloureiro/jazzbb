@@ -103,6 +103,9 @@ export const editorStore = {
   activeHeadingId,
   activeHeadingLevel,
   displayName,
+  getEditor() {
+    return editorInstance();
+  },
   registerEditor(editor: Editor) {
     setEditorInstance(editor);
     if (pendingFocus) {
