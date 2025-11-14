@@ -29,6 +29,8 @@ import {
   toggleSidebarCollapsed,
   isPlainMarkdownMode,
   togglePlainMarkdownMode,
+  isFrontmatterVisible,
+  toggleFrontmatterVisibility,
   colorScheme,
   setColorScheme,
   colorSchemeOptions,
@@ -60,6 +62,7 @@ const Header: Component = () => {
   const [showCommandPalette, setShowCommandPalette] = createSignal(false);
   const [showShortcuts, setShowShortcuts] = createSignal(false);
   const outlineVisible = isOutlineVisible;
+  const frontmatterVisible = isFrontmatterVisible;
   const currentTheme = theme;
   const headerCollapsed = isHeaderCollapsed;
   const fileSystemSupported = supportsFileSystemAccess();
@@ -428,6 +431,20 @@ const Header: Component = () => {
         keywords: 'outline headings navigation',
         run: () => {
           toggleOutlineVisibility();
+        },
+      },
+      {
+        id: 'toggle-frontmatter',
+        label: frontmatterVisible() ? 'Hide frontmatter' : 'Show frontmatter',
+        shortcut: getShortcutLabel('toggle-frontmatter'),
+        keywords: 'frontmatter metadata yaml',
+        disabled: !editorStore.frontmatter(),
+        run: () => {
+          if (!editorStore.frontmatter()) {
+            showToast('This note has no frontmatter yet.', 'info');
+            return;
+          }
+          toggleFrontmatterVisibility();
         },
       },
       {

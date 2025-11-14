@@ -3,6 +3,7 @@ import type { Editor } from '@tiptap/core';
 import { TextSelection } from 'prosemirror-state';
 import type { HeadingInfo } from '../lib/markdown-engine';
 import { mapHeadingsToText } from '../lib/markdown-engine';
+import { extractFrontmatter, parseFrontmatter, type FrontmatterSection, type FrontmatterMetadata } from '../lib/frontmatter';
 
 type CollapseCommands = {
   ensureHeadingVisible: () => boolean;
@@ -23,6 +24,8 @@ const [activeHeadingId, setActiveHeadingId] = createSignal<string | undefined>(u
 const [activeHeadingLevel, setActiveHeadingLevel] = createSignal<number>(0);
 const [editorInstance, setEditorInstance] = createSignal<Editor | undefined>(undefined);
 const [displayName, setDisplayNameSignal] = createSignal<string>(DEFAULT_SCRATCH_TITLE);
+const [frontmatterSection, setFrontmatterSection] = createSignal<FrontmatterSection | undefined>(undefined);
+const [frontmatterMetadataSignal, setFrontmatterMetadataSignal] = createSignal<FrontmatterMetadata | undefined>(undefined);
 let pendingFocus: 'start' | 'end' | undefined;
 let autoExpandNextSelection = false;
 
@@ -46,6 +49,12 @@ function applyHeadings(list: HeadingInfo[]): void {
   }
   const match = list.find((heading) => heading.id === currentId);
   setActiveHeadingLevel(match?.level ?? 0);
+}
+
+function applyFrontmatter(markdown: string): void {
+  const section = extractFrontmatter(markdown);
+  setFrontmatterSection(section);
+  setFrontmatterMetadataSignal(section ? parseFrontmatter(section.content) : undefined);
 }
 
 function updateActiveHeadingFromEditor(): void {
@@ -103,6 +112,8 @@ export const editorStore = {
   activeHeadingId,
   activeHeadingLevel,
   displayName,
+  frontmatter: frontmatterSection,
+  frontmatterMetadata: frontmatterMetadataSignal,
   getEditor() {
     return editorInstance();
   },
@@ -152,6 +163,7 @@ export const editorStore = {
     setActivePath(path);
     setContent(raw);
     setDraftValue(raw);
+    applyFrontmatter(raw);
     setHtml(sanitized);
     setLinks(linkTargets);
     applyHeadings(headingTargets);
@@ -161,6 +173,7 @@ export const editorStore = {
   },
   setDraft(value: string) {
     setDraftValue(value);
+    applyFrontmatter(value);
   },
   setPreview(markup: string, linkTargets: string[], headingTargets: HeadingInfo[]) {
     setHtml(markup);

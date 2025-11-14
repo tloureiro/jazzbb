@@ -4,6 +4,8 @@ import Sidebar from './components/Sidebar';
 import EditorPane from './components/EditorPane';
 import ToastTray from './components/ToastTray';
 import OutlinePanel from './components/OutlinePanel';
+import FrontmatterPanel from './components/FrontmatterPanel';
+import { editorStore } from './state/editor';
 import { isVaultMode, workspaceStore, type WorkspaceMode } from './state/workspace';
 import {
   isOutlineVisible,
@@ -17,6 +19,7 @@ import {
   setOutlineWidthPercent,
   resetSidebarWidthPercent,
   resetOutlineWidthPercent,
+  isFrontmatterVisible,
 } from './state/ui';
 import { grammarlyStore } from './state/grammarly';
 import { getShortcutLabel, subscribeToShortcutChanges } from './lib/shortcuts';
@@ -27,9 +30,12 @@ const App: Component = () => {
   const sidebarCollapsed = isSidebarCollapsed;
   const sidebarVisible = () => vaultActive() && !sidebarCollapsed();
   const outlineVisible = isOutlineVisible;
+  const frontmatterVisible = isFrontmatterVisible;
   const headerCollapsed = isHeaderCollapsed;
   const sidebarWidth = sidebarWidthPercent;
   const outlineWidth = outlineWidthPercent;
+  const frontmatterPanelActive = createMemo(() => frontmatterVisible() && Boolean(editorStore.frontmatter()));
+  const panelColumnVisible = createMemo(() => outlineVisible() || frontmatterPanelActive());
   const RESIZE_HANDLE_WIDTH = '1rem';
   let layoutSectionRef: HTMLElement | undefined;
   const [shortcutsVersion, setShortcutsVersion] = createSignal(0);
@@ -47,16 +53,16 @@ const App: Component = () => {
 
   const gridTemplate = createMemo(() => {
     const hasSidebar = sidebarVisible();
-    const hasOutline = outlineVisible();
+    const hasPanels = panelColumnVisible();
     const sidebarColumn = `${sidebarWidth()}%`;
     const outlineColumn = `${outlineWidth()}%`;
-    if (hasSidebar && hasOutline) {
+    if (hasSidebar && hasPanels) {
       return `${sidebarColumn} ${RESIZE_HANDLE_WIDTH} 1fr ${RESIZE_HANDLE_WIDTH} ${outlineColumn}`;
     }
     if (hasSidebar) {
       return `${sidebarColumn} ${RESIZE_HANDLE_WIDTH} 1fr`;
     }
-    if (hasOutline) {
+    if (hasPanels) {
       return `1fr ${RESIZE_HANDLE_WIDTH} ${outlineColumn}`;
     }
     return '1fr';
@@ -188,7 +194,7 @@ const App: Component = () => {
       <section
         class="app-body"
         data-sidebar={sidebarVisible() ? 'true' : 'false'}
-        data-outline={outlineVisible() ? 'true' : 'false'}
+        data-outline={panelColumnVisible() ? 'true' : 'false'}
         style={{ 'grid-template-columns': gridTemplate() }}
         ref={(node) => {
           layoutSectionRef = node ?? undefined;
@@ -208,7 +214,7 @@ const App: Component = () => {
           </>
         </Show>
         <EditorPane />
-        <Show when={outlineVisible()}>
+        <Show when={panelColumnVisible()}>
           <>
             <div
               role="separator"
@@ -218,7 +224,14 @@ const App: Component = () => {
               onPointerDown={beginOutlineResize}
               onDblClick={resetOutlineWidthPercent}
             />
-            <OutlinePanel />
+            <div class="panel-stack">
+              <Show when={outlineVisible()}>
+                <OutlinePanel />
+              </Show>
+              <Show when={frontmatterPanelActive()}>
+                <FrontmatterPanel />
+              </Show>
+            </div>
           </>
         </Show>
       </section>

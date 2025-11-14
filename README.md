@@ -17,6 +17,7 @@ jazzbb is an offline-first markdown editor / hub that runs entirely in the brows
 - **Outline navigator**: Toggle a live heading tree (Ctrl/Cmd+Shift+O), collapse/expand levels with arrow keys, and jump between sections without leaving the editor.
 - **Collapsible headings**: Fold any heading inline via the new caret control or `Ctrl/Cmd + Alt/Option + K`. Collapsed sections auto-expand when search jumps into them.
 - **Editable titles**: Rename vault notes in the editor header or inline in the sidebar (double-click a note to edit). Names now preserve spacing/casing in browser vault and single-file modes.
+- **Frontmatter tools**: YAML frontmatter stays hidden until you toggle it, then opens in a syntax-highlighted inline editor with a companion panel that surfaces parsed metadata for quick reference.
 - **Keyboard shortcuts**: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Ctrl/Cmd+K` opens the command palette, `Ctrl/Cmd+/` toggles the shortcut help, `Ctrl/Cmd+D` deletes the current line, `Ctrl/Cmd+Shift+H` collapses the top bar, `Ctrl/Cmd+Shift+B` collapses the vault sidebar, and `Esc` closes modals. Sidebar buttons mirror these actions, and every shortcut can be rebound from the help panel—custom bindings stay in your browser’s storage.
 - **Browser vault**: Seamlessly graduate from a scratch note into an IndexedDB-backed vault, keep notes/config offline, export/import the entire vault as a `.zip`, and save individual notes to disk without leaving the browser vault.
 - **Browser compatibility note**: Non-Chromium browsers surface a warning banner because the File System Access API is unavailable for saving.
@@ -102,6 +103,7 @@ Use the selector in the top-right toolbar to switch between the five systems. Ea
 | `Ctrl/Cmd + Shift + H` | Collapse/expand top bar |
 | `Ctrl/Cmd + Shift + B` | Collapse/expand vault sidebar |
 | `Ctrl/Cmd + Alt/Option + K` | Toggle collapse for the current heading |
+| `Ctrl/Cmd + Alt/Option + F` | Toggle frontmatter editor |
 | `Enter` (title field) | Commit header rename |
 | `Esc`               | Close search/overlay|
 

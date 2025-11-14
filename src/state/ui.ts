@@ -260,6 +260,18 @@ export function togglePlainMarkdownMode(): void {
   setPlainMarkdownModeSignal((prev) => !prev);
 }
 
+const [frontmatterVisibleSignal, setFrontmatterVisibleSignal] = createSignal(false);
+
+export const isFrontmatterVisible = frontmatterVisibleSignal;
+
+export function setFrontmatterVisible(visible: boolean): void {
+  setFrontmatterVisibleSignal(visible);
+}
+
+export function toggleFrontmatterVisibility(): void {
+  setFrontmatterVisibleSignal((prev) => !prev);
+}
+
 export function setSidebarCollapsed(collapsed: boolean): void {
   setSidebarCollapsedSignal(collapsed);
   applySidebarCollapsed(collapsed);

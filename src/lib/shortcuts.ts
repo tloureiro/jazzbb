@@ -29,6 +29,7 @@ export type ShortcutId =
   | 'close-document'
   | 'toggle-grammarly'
   | 'toggle-heading-collapse'
+  | 'toggle-frontmatter'
   | 'toggle-plain-markdown'
   | 'delete-line'
   | 'escape'
@@ -183,6 +184,13 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     description: 'Toggle heading collapse for the current section',
     mac: { key: 'k', meta: true, alt: true },
     windows: { key: 'k', ctrl: true, alt: true },
+    group: 'general',
+  },
+  {
+    id: 'toggle-frontmatter',
+    description: 'Toggle the frontmatter editor',
+    mac: { key: 'f', meta: true, alt: true },
+    windows: { key: 'f', ctrl: true, alt: true },
     group: 'general',
   },
   {

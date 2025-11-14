@@ -1,11 +1,18 @@
 import { Component, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import { editorStore } from '../state/editor';
 import CodeEditor from './CodeEditor';
+import FrontmatterEditor from './FrontmatterEditor';
 import { parseNote } from '../platform/parser-service';
 import { sanitizeHtml, renderMarkdown, extractHeadings } from '../lib/markdown';
 import { saveActiveNote } from '../platform/save-note';
 import { hasUnsavedChanges } from '../lib/note-stats';
-import { showToast, isPlainMarkdownMode, togglePlainMarkdownMode } from '../state/ui';
+import {
+  showToast,
+  isPlainMarkdownMode,
+  togglePlainMarkdownMode,
+  isFrontmatterVisible,
+  toggleFrontmatterVisibility,
+} from '../state/ui';
 import { workspaceStore, isVaultMode } from '../state/workspace';
 import { renameNote } from '../platform/note-manager';
 import { SCRATCH_TITLE } from '../state/editor';
@@ -31,11 +38,27 @@ const EditorPane: Component = () => {
   );
 
   const plainMode = isPlainMarkdownMode;
+  const frontmatterVisible = isFrontmatterVisible;
+  const frontmatterSection = editorStore.frontmatter;
   const formatShortcutTitle = (label: string, id: Parameters<typeof getShortcutLabel>[0]) => {
     shortcutsVersion();
     const keys = getShortcutLabel(id);
     return keys ? `${label} (${keys})` : label;
   };
+
+  const editorValue = createMemo(() => {
+    const current = editorStore.draft();
+    if (plainMode()) {
+      return current;
+    }
+    const frontmatter = frontmatterSection();
+    if (!frontmatter) {
+      return current;
+    }
+    return frontmatter.body;
+  });
+
+  const frontmatterContent = createMemo(() => frontmatterSection()?.content ?? '');
 
   const canCloseDocument = createMemo(() => {
     const mode = workspaceStore.mode();
@@ -53,7 +76,7 @@ const EditorPane: Component = () => {
     }
   };
 
-  const handleChange = (value: string) => {
+  const applyDraftUpdate = (value: string) => {
     editorStore.setDraft(value);
     const path = editorStore.activePath();
 
@@ -82,6 +105,31 @@ const EditorPane: Component = () => {
         console.error('Failed to parse markdown', error);
       }
     }, 150);
+  };
+
+  const handleChange = (value: string) => {
+    const frontmatter = frontmatterSection();
+    const shouldAttachFrontmatter = !plainMode() && !frontmatterVisible();
+    const nextValue = shouldAttachFrontmatter && frontmatter ? `${frontmatter.raw}${value}` : value;
+    applyDraftUpdate(nextValue);
+  };
+
+  const handleFrontmatterChange = (content: string) => {
+    const frontmatter = frontmatterSection();
+    if (!frontmatter) {
+      return;
+    }
+    const nextValue = `${frontmatter.open}${content}${frontmatter.close}${frontmatter.body}`;
+    applyDraftUpdate(nextValue);
+  };
+
+  const requestFrontmatterToggle = (): boolean => {
+    if (!frontmatterSection()) {
+      showToast('This note has no frontmatter yet.', 'info');
+      return false;
+    }
+    toggleFrontmatterVisibility();
+    return true;
   };
 
   const handlePlainInput = (event: Event) => {
@@ -189,6 +237,14 @@ const EditorPane: Component = () => {
 
     if (isShortcutEvent(event, 'toggle-heading-collapse')) {
       const handled = toggleHeadingCollapseShortcut();
+      if (handled) {
+        event.preventDefault();
+      }
+      return;
+    }
+
+    if (isShortcutEvent(event, 'toggle-frontmatter')) {
+      const handled = requestFrontmatterToggle();
       if (handled) {
         event.preventDefault();
       }
@@ -459,6 +515,20 @@ const EditorPane: Component = () => {
                 H{editorStore.activeHeadingLevel()}
               </span>
             )}
+            <Show when={!plainMode() && frontmatterSection()}>
+              <button
+                type="button"
+                class="frontmatter-indicator"
+                aria-label={frontmatterVisible() ? 'Hide frontmatter' : 'Show frontmatter'}
+                title={frontmatterVisible() ? 'Hide frontmatter' : 'Show frontmatter'}
+                data-active={frontmatterVisible() ? 'true' : 'false'}
+                onClick={() => {
+                  requestFrontmatterToggle();
+                }}
+              >
+                FM
+              </button>
+            </Show>
           </div>
           <Show when={canCloseDocument()}>
             <button
@@ -475,8 +545,11 @@ const EditorPane: Component = () => {
         </div>
       </header>
       <div class="editor-container" ref={containerRef}>
+        <Show when={!plainMode() && frontmatterVisible() && frontmatterSection()}>
+          <FrontmatterEditor value={frontmatterContent} onChange={handleFrontmatterChange} />
+        </Show>
         <div class="rich-editor-host" classList={{ 'is-hidden': plainMode() }}>
-          <CodeEditor value={editorStore.draft} onChange={handleChange} />
+          <CodeEditor value={editorValue} onChange={handleChange} />
         </div>
         <Show when={plainMode()}>
           <textarea
