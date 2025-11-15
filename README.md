@@ -17,6 +17,12 @@ jazzbb is an offline-first markdown editor / hub that runs entirely in the brows
 - **Outline navigator**: Toggle a live heading tree (Ctrl/Cmd+Shift+O), collapse/expand levels with arrow keys, and jump between sections without leaving the editor.
 - **Collapsible headings**: Fold any heading inline via the new caret control or `Ctrl/Cmd + Alt/Option + K`. Collapsed sections auto-expand when search jumps into them.
 - **Editable titles**: Rename vault notes in the editor header or inline in the sidebar (double-click a note to edit). Names now preserve spacing/casing in browser vault and single-file modes.
+- **Frontmatter tools**: YAML frontmatter lives in a compact editor bar that slides in above the main canvas; use the `FM` badge (or `Ctrl/Cmd+Alt+F` / palette command) to display it, the new close icon to dismiss it if you prefer a clean canvas, and the separate outline panel display controls or `Ctrl/Cmd+Alt+Shift+F` to show the parsed metadata panel in the sidebar.
+- **Command palette**: `Ctrl/Cmd+K` opens a searchable list of every action. The palette now tokenizes your query, so you can still find “search notes” by typing “find notes” or say “show frontmatter” even though the labels read “Display…”. It also remembers the last command you ran and surfaces it to the top when the query is empty, letting you reopen it and press Enter to repeat the previous action (toggling commands respect this history, too).
+
+## Shortcut reference
+
+Full macOS and Windows/Linux shortcut tables live in [`SHORTCUTS.md`](SHORTCUTS.md); update that file whenever you add, rename, or rebind a shortcut so everyone stays aligned.
 - **Keyboard shortcuts**: `Ctrl/Cmd+N` new note, `Ctrl/Cmd+S` save, `Ctrl/Cmd+P` search, `Ctrl/Cmd+K` opens the command palette, `Ctrl/Cmd+/` toggles the shortcut help, `Ctrl/Cmd+D` deletes the current line, `Ctrl/Cmd+Shift+H` collapses the top bar, `Ctrl/Cmd+Shift+B` collapses the vault sidebar, and `Esc` closes modals. Sidebar buttons mirror these actions, and every shortcut can be rebound from the help panel—custom bindings stay in your browser’s storage.
 - **Browser vault**: Seamlessly graduate from a scratch note into an IndexedDB-backed vault, keep notes/config offline, export/import the entire vault as a `.zip`, and save individual notes to disk without leaving the browser vault.
 - **Browser compatibility note**: Non-Chromium browsers surface a warning banner because the File System Access API is unavailable for saving.
@@ -97,11 +103,12 @@ Use the selector in the top-right toolbar to switch between the five systems. Ea
 | `Ctrl/Cmd + N`      | Create new note    |
 | `Ctrl/Cmd + S`      | Save active note   |
 | `Ctrl/Cmd + P`      | Open search overlay|
-| `Ctrl/Cmd + K` | Open command palette |
+| `Ctrl/Cmd + K` | Open command palette (press Enter immediately to repeat the last command) |
 | `Ctrl/Cmd + Shift + O` | Toggle outline panel|
 | `Ctrl/Cmd + Shift + H` | Collapse/expand top bar |
 | `Ctrl/Cmd + Shift + B` | Collapse/expand vault sidebar |
 | `Ctrl/Cmd + Alt/Option + K` | Toggle collapse for the current heading |
+| `Ctrl/Cmd + Alt/Option + F` | Toggle frontmatter block |
 | `Enter` (title field) | Commit header rename |
 | `Esc`               | Close search/overlay|
 

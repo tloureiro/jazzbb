@@ -16,6 +16,8 @@ export type CommandPaletteCommand = {
 export type CommandPaletteProps = {
   commands: Accessor<ReadonlyArray<CommandPaletteCommand>>;
   onClose: () => void;
+  initialCommandId?: Accessor<string | undefined>;
+  onCommandRun?: (id: string) => void;
 };
 
 function normalize(text: string): string {
@@ -23,6 +25,13 @@ function normalize(text: string): string {
     .toLowerCase()
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '');
+}
+
+function matchesQueryTokens(tokens: string[], command: CommandPaletteCommand): boolean {
+  const haystack = [command.label, command.subtitle ?? '', command.keywords ?? '']
+    .map((part) => normalize(part))
+    .join(' ');
+  return tokens.every((token) => haystack.includes(token));
 }
 
 const CommandPalette: Component<CommandPaletteProps> = (props) => {
@@ -37,17 +46,27 @@ const CommandPalette: Component<CommandPaletteProps> = (props) => {
   );
 
   const filteredCommands = createMemo(() => {
-    const value = normalize(query());
+    const value = normalize(query()).trim();
     const items = props.commands();
-    if (!value.trim()) {
+    if (!value) {
+      const lastId = props.initialCommandId?.();
+      if (!lastId) {
+        return items;
+      }
+      const index = items.findIndex((command) => command.id === lastId);
+      if (index <= 0) {
+        return items;
+      }
+      const reordered = items.slice();
+      const [command] = reordered.splice(index, 1);
+      reordered.unshift(command);
+      return reordered;
+    }
+    const tokens = value.split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) {
       return items;
     }
-    return items.filter((command) => {
-      const haystack = [command.label, command.subtitle ?? '', command.keywords ?? '']
-        .map((part) => normalize(part))
-        .join(' ');
-      return haystack.includes(value);
-    });
+    return items.filter((command) => matchesQueryTokens(tokens, command));
   });
 
   createEffect(() => {
@@ -64,11 +83,24 @@ const CommandPalette: Component<CommandPaletteProps> = (props) => {
     setHighlightedIndex(0);
   });
 
+  createEffect(() => {
+    const lastId = props.initialCommandId?.();
+    const list = filteredCommands();
+    if (!lastId || query().trim() || list.length === 0) {
+      return;
+    }
+    const targetIndex = list.findIndex((command) => command.id === lastId);
+    if (targetIndex >= 0) {
+      setHighlightedIndex(targetIndex);
+    }
+  });
+
   const handleRun = async (command: CommandPaletteCommand) => {
     if (command.disabled) {
       return;
     }
     await command.run();
+    props.onCommandRun?.(command.id);
     props.onClose();
   };
 
