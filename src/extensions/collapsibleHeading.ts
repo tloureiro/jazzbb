@@ -5,7 +5,7 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import type { EditorState, Transaction } from '@tiptap/pm/state';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { getShortcutLabel } from '../lib/shortcuts';
-import { grammarlyStore } from '../state/grammarly';
+import { grammarChecksStore } from '../state/grammarChecks';
 
 type CollapsedRange = { from: number; to: number; headingPos: number };
 
@@ -197,7 +197,7 @@ export const CollapsibleHeading = Heading.extend({
           tr.setNodeAttribute(pos, 'collapsed', nextCollapsed);
           dispatch(tr);
           if (nextCollapsed) {
-            grammarlyStore.suppressForCollapse();
+            grammarChecksStore.suppressForCollapse();
           }
           return true;
         },
@@ -215,7 +215,7 @@ export const CollapsibleHeading = Heading.extend({
           }
           tr.setNodeAttribute(target.pos, 'collapsed', true);
           dispatch(tr);
-          grammarlyStore.suppressForCollapse();
+          grammarChecksStore.suppressForCollapse();
           return true;
         },
       expandHeadingAt:
@@ -287,7 +287,7 @@ export const CollapsibleHeading = Heading.extend({
             };
           }
           if (value?.collapsedRanges.length && nextState?.collapsedRanges.length === 0) {
-            grammarlyStore.releaseCollapseSuppression();
+            grammarChecksStore.releaseCollapseSuppression();
           }
           return nextState ?? rebuildState(newState.doc, editor);
         },

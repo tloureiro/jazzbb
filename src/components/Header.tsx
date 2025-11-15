@@ -43,7 +43,7 @@ import {
 } from '../state/ui';
 import { openSingleFile } from '../platform/open-file';
 import { workspaceStore, isVaultMode, isBrowserVaultMode } from '../state/workspace';
-import { grammarlyStore } from '../state/grammarly';
+import { grammarChecksStore } from '../state/grammarChecks';
 import ShortcutHelpModal from './ShortcutHelpModal';
 import {
   exportBrowserVault,
@@ -354,9 +354,12 @@ const Header: Component = () => {
     setShowSearch((prev) => !prev);
   };
 
-  const toggleGrammarlySuppression = () => {
-    grammarlyStore.toggle();
-    showToast(grammarlyStore.isSuppressed() ? 'Grammarly overlays hidden' : 'Grammarly overlays visible', 'info');
+  const toggleGrammarChecks = () => {
+    grammarChecksStore.toggleGrammarChecks();
+    showToast(
+      grammarChecksStore.isGrammarChecksEnabled() ? 'Grammar checks enabled' : 'Grammar checks disabled',
+      'info',
+    );
   };
 
   const ensureFrontmatterAvailable = (): boolean => {
@@ -512,12 +515,12 @@ const Header: Component = () => {
         },
       },
       {
-        id: 'toggle-grammarly',
-        label: grammarlyStore.isSuppressed() ? 'Display Grammarly overlays' : 'Hide Grammarly overlays',
-        shortcut: getShortcutLabel('toggle-grammarly'),
-        keywords: 'grammarly spell grammar suggestions display show',
+        id: 'toggle-grammar-checks',
+        label: grammarChecksStore.isGrammarChecksEnabled() ? 'Disable grammar checks' : 'Enable grammar checks',
+        shortcut: getShortcutLabel('toggle-grammar-checks'),
+        keywords: 'grammar spellcheck suggestions toggle',
         run: () => {
-          toggleGrammarlySuppression();
+          toggleGrammarChecks();
         },
       },
       {
@@ -575,9 +578,9 @@ const Header: Component = () => {
       return;
     }
 
-    if (isShortcutEvent(event, 'toggle-grammarly')) {
+    if (isShortcutEvent(event, 'toggle-grammar-checks')) {
       event.preventDefault();
-      toggleGrammarlySuppression();
+      toggleGrammarChecks();
       return;
     }
 

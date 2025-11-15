@@ -14,6 +14,7 @@ import { Extension } from '@tiptap/core';
 import { lowlight } from '../lib/syntax';
 import { normalizeSerializedMarkdown, renderMarkdown } from '../lib/markdown';
 import { editorStore } from '../state/editor';
+import { grammarChecksStore } from '../state/grammarChecks';
 import EmojiSuggestionExtension from '../extensions/emojiSuggestion';
 import { CollapsibleHeading } from '../extensions/collapsibleHeading';
 import { deleteCurrentLine } from '../lib/editorShortcuts';
@@ -225,6 +226,13 @@ export function CodeEditor(props: CodeEditorProps) {
         props.onChange(normalized);
         editorStore.updateSelectionHeading();
       },
+    });
+
+    createEffect(() => {
+      const enabled = grammarChecksStore.isGrammarChecksEnabled();
+      if (editor && editor.view?.dom) {
+        editor.view.dom.setAttribute('spellcheck', enabled ? 'true' : 'false');
+      }
     });
 
     queueMicrotask(() => {

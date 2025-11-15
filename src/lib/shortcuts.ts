@@ -27,7 +27,7 @@ export type ShortcutId =
   | 'toggle-sidebar'
   | 'open-file'
   | 'close-document'
-  | 'toggle-grammarly'
+  | 'toggle-grammar-checks'
   | 'toggle-heading-collapse'
   | 'toggle-frontmatter-editor'
   | 'toggle-frontmatter-panel'
@@ -174,8 +174,8 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     group: 'general',
   },
   {
-    id: 'toggle-grammarly',
-    description: 'Toggle Grammarly overlays',
+    id: 'toggle-grammar-checks',
+    description: 'Toggle grammar checks (browser + Grammarly)',
     mac: { key: 'g', meta: true, alt: true },
     windows: { key: 'g', ctrl: true, alt: true },
     group: 'general',

@@ -1,5 +1,6 @@
 import { createSignal } from 'solid-js';
 
+const SUPPRESSION_STYLE_ID = 'jazzbb-grammar-suppression';
 const SUPPRESSION_RULES = `
 .tiptap-editor [data-grammarly-part],
 .tiptap-editor [class*='grammarly-'],
@@ -29,7 +30,7 @@ function injectSuppression() {
   if (typeof document === 'undefined') return;
   if (styleElement) return;
   styleElement = document.createElement('style');
-  styleElement.id = 'jazzbb-grammarly-suppression';
+  styleElement.id = SUPPRESSION_STYLE_ID;
   styleElement.textContent = SUPPRESSION_RULES;
   document.head.appendChild(styleElement);
 }
@@ -50,41 +51,53 @@ function detectGrammarly(): boolean {
 }
 
 const [isSuppressed, setSuppressedSignal] = createSignal(false);
+const [browserSpellcheckEnabled, setBrowserSpellcheckEnabled] = createSignal(true);
 let collapseSuppressed = false;
+let userSuppressed = false;
 
-export const grammarlyStore = {
+function updateSuppression() {
+  const shouldSuppress = userSuppressed || collapseSuppressed;
+  setSuppressedSignal(shouldSuppress);
+  if (shouldSuppress) {
+    injectSuppression();
+  } else {
+    removeSuppression();
+  }
+}
+
+function setGrammarChecksEnabled(enabled: boolean) {
+  userSuppressed = !enabled;
+  collapseSuppressed = false;
+  setBrowserSpellcheckEnabled(enabled);
+  updateSuppression();
+}
+
+function toggleGrammarChecks() {
+  setGrammarChecksEnabled(!browserSpellcheckEnabled());
+}
+
+export const grammarChecksStore = {
   isSuppressed,
+  isGrammarChecksEnabled() {
+    return browserSpellcheckEnabled();
+  },
   isCollapseSuppressed() {
     return collapseSuppressed;
   },
   initialize() {
-    if (detectGrammarly()) {
-      collapseSuppressed = false;
-      this.setSuppressed(true);
-    }
+    setGrammarChecksEnabled(!detectGrammarly());
   },
-  setSuppressed(value: boolean) {
-    setSuppressedSignal(value);
-    if (value) {
-      injectSuppression();
-    } else {
-      removeSuppression();
-      collapseSuppressed = false;
-    }
-  },
+  toggleGrammarChecks,
+  toggle: toggleGrammarChecks,
   suppressForCollapse() {
     if (collapseSuppressed) return;
-    if (isSuppressed()) return;
+    if (userSuppressed) return;
     collapseSuppressed = true;
-    this.setSuppressed(true);
+    updateSuppression();
   },
   releaseCollapseSuppression() {
     if (!collapseSuppressed) return;
     collapseSuppressed = false;
-    this.setSuppressed(false);
-  },
-  toggle() {
-    collapseSuppressed = false;
-    this.setSuppressed(!isSuppressed());
+    updateSuppression();
   },
 };

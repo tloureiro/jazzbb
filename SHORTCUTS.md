@@ -14,7 +14,7 @@ _Agents: whenever a shortcut definition, label, binding, or purpose changes, upd
 | `toggle-outline` | Toggle the outline panel | `⇧⌘O` | |
 | `open-file` | Open a Markdown file | `⌘⌥O` | |
 | `close-document` | Close the current document | `⌘⌥W` | |
-| `toggle-grammarly` | Toggle Grammarly overlays | `⌘⌥G` | |
+| `toggle-grammar-checks` | Toggle grammar checks (browser + Grammarly) | `⌘⌥G` | |
 | `toggle-heading-collapse` | Toggle collapse for the current heading | `⌘⌥K` | |
 | `toggle-frontmatter-editor` | Toggle the embedded frontmatter editor | `⌘⌥F` | Requires frontmatter |
 | `toggle-frontmatter-panel` | Toggle the sidebar frontmatter panel | `⇧⌘⌥F` | Requires frontmatter |
@@ -36,7 +36,7 @@ _Agents: whenever a shortcut definition, label, binding, or purpose changes, upd
 | `toggle-outline` | Toggle the outline panel | `Ctrl+Shift+O` | |
 | `open-file` | Open a Markdown file | `Ctrl+Alt+O` | |
 | `close-document` | Close the current document | `Ctrl+Alt+W` | |
-| `toggle-grammarly` | Toggle Grammarly overlays | `Ctrl+Alt+G` | |
+| `toggle-grammar-checks` | Toggle grammar checks (browser + Grammarly) | `Ctrl+Alt+G` | |
 | `toggle-heading-collapse` | Toggle collapse for the current heading | `Ctrl+Alt+K` | |
 | `toggle-frontmatter-editor` | Toggle the embedded frontmatter editor | `Ctrl+Alt+F` | Requires frontmatter |
 | `toggle-frontmatter-panel` | Toggle the sidebar frontmatter panel | `Ctrl+Alt+Shift+F` | Requires frontmatter |

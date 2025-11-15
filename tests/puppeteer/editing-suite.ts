@@ -933,7 +933,7 @@ const EDITING_SCENARIOS: EditingScenario[] = [
     },
   },
   {
-    name: 'suppresses grammarly overlays after collapsing a heading',
+    name: 'suppresses grammar overlays after collapsing a heading',
     setup: async (page) => {
       await setEditorDoc(page, {
         type: 'doc',
@@ -945,20 +945,20 @@ const EDITING_SCENARIOS: EditingScenario[] = [
     },
     run: async (page) => {
       const pos = await firstHeadingPos(page);
-      const existing = await page.evaluate(() => document.getElementById('jazzbb-grammarly-suppression') !== null);
+      const existing = await page.evaluate(() => document.getElementById('jazzbb-grammar-suppression') !== null);
       if (existing) {
         await page.evaluate(() => {
-          document.getElementById('jazzbb-grammarly-suppression')?.remove();
+        document.getElementById('jazzbb-grammar-suppression')?.remove();
         });
       }
       await collapseHeadingAt(page, pos);
-      await page.waitForSelector('#jazzbb-grammarly-suppression', { timeout: WAIT_TIMEOUT });
+      await page.waitForSelector('#jazzbb-grammar-suppression', { timeout: WAIT_TIMEOUT });
     },
     assert: async (page) => {
       const exists = await page.evaluate(
-        () => document.getElementById('jazzbb-grammarly-suppression') !== null,
+        () => document.getElementById('jazzbb-grammar-suppression') !== null,
       );
-      assert.equal(exists, true, 'Expected Grammarly suppression style to be injected after collapsing');
+      assert.equal(exists, true, 'Expected grammar suppression style to be injected after collapsing');
     },
   },
   {

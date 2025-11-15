@@ -20,6 +20,12 @@ jazzbb is an offline-first markdown editor / hub that runs entirely in the brows
 - **Frontmatter tools**: YAML frontmatter lives in a compact editor bar that slides in above the main canvas; use the `FM` badge (or `Ctrl/Cmd+Alt+F` / palette command) to display it, the new close icon to dismiss it if you prefer a clean canvas, and the separate outline panel display controls or `Ctrl/Cmd+Alt+Shift+F` to show the parsed metadata panel in the sidebar.
 - **Command palette**: `Ctrl/Cmd+K` opens a searchable list of every action. The palette now tokenizes your query, so you can still find “search notes” by typing “find notes” or say “show frontmatter” even though the labels read “Display…”. It also remembers the last command you ran and surfaces it to the top when the query is empty, letting you reopen it and press Enter to repeat the previous action (toggling commands respect this history, too).
 
+## Release 0.2.5
+
+- Renamed the “Toggle Grammarly overlays” action to **Toggle grammar checks** (`⌘⌥G` / `Ctrl+Alt+G`) so it now covers both browser spellcheck and any Grammarly overlays via a single command and shortcut.
+- The TipTap editor’s spellcheck attribute listens to the new toggle, keeping browser-native grammar suggestions in sync with the suppression CSS that hides Grammarly additions.
+- Header toast copy, command-palette labels, and README references now describe the combined grammar-checks toggle so discoverability matches the broader behavior.
+
 ## Shortcut reference
 
 Full macOS and Windows/Linux shortcut tables live in [`SHORTCUTS.md`](SHORTCUTS.md); update that file whenever you add, rename, or rebind a shortcut so everyone stays aligned.

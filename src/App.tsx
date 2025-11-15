@@ -23,7 +23,7 @@ import {
   setFrontmatterPanelVisible,
   setOutlineVisible,
 } from './state/ui';
-import { grammarlyStore } from './state/grammarly';
+import { grammarChecksStore } from './state/grammarChecks';
 import { getShortcutLabel, subscribeToShortcutChanges } from './lib/shortcuts';
 import { DEFAULT_EDITOR_FONT_SCALE, setEditorFontScale } from './state/ui';
 
@@ -162,7 +162,7 @@ const App: Component = () => {
 
   onMount(() => {
     setEditorFontScale(DEFAULT_EDITOR_FONT_SCALE);
-    grammarlyStore.initialize();
+    grammarChecksStore.initialize();
     updateHeaderHeight();
     const handleResize = () => updateHeaderHeight();
     window.addEventListener('resize', handleResize);
