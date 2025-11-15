@@ -29,8 +29,10 @@ import {
   toggleSidebarCollapsed,
   isPlainMarkdownMode,
   togglePlainMarkdownMode,
-  isFrontmatterVisible,
-  toggleFrontmatterVisibility,
+  isFrontmatterEditorVisible,
+  toggleFrontmatterEditorVisibility,
+  isFrontmatterPanelVisible,
+  toggleFrontmatterPanelVisibility,
   lastCommandId,
   setLastCommandId,
   colorScheme,
@@ -64,7 +66,8 @@ const Header: Component = () => {
   const [showCommandPalette, setShowCommandPalette] = createSignal(false);
   const [showShortcuts, setShowShortcuts] = createSignal(false);
   const outlineVisible = isOutlineVisible;
-  const frontmatterVisible = isFrontmatterVisible;
+  const frontmatterEditorVisible = isFrontmatterEditorVisible;
+  const frontmatterPanelVisible = isFrontmatterPanelVisible;
   const currentTheme = theme;
   const headerCollapsed = isHeaderCollapsed;
   const fileSystemSupported = supportsFileSystemAccess();
@@ -356,6 +359,24 @@ const Header: Component = () => {
     showToast(grammarlyStore.isSuppressed() ? 'Grammarly overlays hidden' : 'Grammarly overlays visible', 'info');
   };
 
+  const ensureFrontmatterAvailable = (): boolean => {
+    if (!editorStore.frontmatter()) {
+      showToast('This note has no frontmatter yet.', 'info');
+      return false;
+    }
+    return true;
+  };
+
+  const handleToggleFrontmatterEditor = () => {
+    if (!ensureFrontmatterAvailable()) return;
+    toggleFrontmatterEditorVisibility();
+  };
+
+  const handleToggleFrontmatterPanel = () => {
+    if (!ensureFrontmatterAvailable()) return;
+    toggleFrontmatterPanelVisibility();
+  };
+
   const commandItems = createMemo<ReadonlyArray<CommandPaletteCommand>>(() => {
     shortcutsVersion();
     const themeMode = currentTheme();
@@ -428,26 +449,28 @@ const Header: Component = () => {
       },
       {
         id: 'toggle-outline',
-        label: outlineActive ? 'Hide outline panel' : 'Show outline panel',
+        label: outlineActive ? 'Hide outline panel' : 'Display outline panel',
         shortcut: getShortcutLabel('toggle-outline'),
-        keywords: 'outline headings navigation',
+        keywords: 'outline headings navigation display show',
         run: () => {
           toggleOutlineVisibility();
         },
       },
       {
-        id: 'toggle-frontmatter',
-        label: frontmatterVisible() ? 'Hide frontmatter' : 'Show frontmatter',
-        shortcut: getShortcutLabel('toggle-frontmatter'),
-        keywords: 'frontmatter metadata yaml',
+        id: 'toggle-frontmatter-editor',
+        label: frontmatterEditorVisible() ? 'Hide frontmatter editor' : 'Display frontmatter editor',
+        shortcut: getShortcutLabel('toggle-frontmatter-editor'),
+        keywords: 'frontmatter metadata yaml editor display show',
         disabled: !editorStore.frontmatter(),
-        run: () => {
-          if (!editorStore.frontmatter()) {
-            showToast('This note has no frontmatter yet.', 'info');
-            return;
-          }
-          toggleFrontmatterVisibility();
-        },
+        run: handleToggleFrontmatterEditor,
+      },
+      {
+        id: 'toggle-frontmatter-panel',
+        label: frontmatterPanelVisible() ? 'Hide frontmatter panel' : 'Display frontmatter panel',
+        shortcut: getShortcutLabel('toggle-frontmatter-panel'),
+        keywords: 'frontmatter metadata yaml panel display show',
+        disabled: !editorStore.frontmatter(),
+        run: handleToggleFrontmatterPanel,
       },
       {
         id: 'toggle-sidebar',
@@ -481,18 +504,18 @@ const Header: Component = () => {
       },
       {
         id: 'toggle-plain-markdown',
-        label: plainMarkdown ? 'Show formatted editor' : 'Show plain Markdown',
+        label: plainMarkdown ? 'Display formatted editor' : 'Display plain Markdown',
         shortcut: getShortcutLabel('toggle-plain-markdown'),
-        keywords: 'markdown plain source editor',
+        keywords: 'markdown plain source editor display show',
         run: () => {
           togglePlainMarkdownMode();
         },
       },
       {
         id: 'toggle-grammarly',
-        label: grammarlyStore.isSuppressed() ? 'Show Grammarly overlays' : 'Hide Grammarly overlays',
+        label: grammarlyStore.isSuppressed() ? 'Display Grammarly overlays' : 'Hide Grammarly overlays',
         shortcut: getShortcutLabel('toggle-grammarly'),
-        keywords: 'grammarly spell grammar suggestions',
+        keywords: 'grammarly spell grammar suggestions display show',
         run: () => {
           toggleGrammarlySuppression();
         },
@@ -567,6 +590,12 @@ const Header: Component = () => {
     if (isShortcutEvent(event, 'toggle-outline')) {
       event.preventDefault();
       toggleOutlineVisibility();
+      return;
+    }
+
+    if (isShortcutEvent(event, 'toggle-frontmatter-panel')) {
+      event.preventDefault();
+      handleToggleFrontmatterPanel();
       return;
     }
 
@@ -738,6 +767,18 @@ const Header: Component = () => {
             title={formatShortcutTitle('Toggle outline', 'toggle-outline')}
           >
             Outline
+          </button>
+          <button
+            type="button"
+            class="secondary"
+            data-active={frontmatterPanelVisible() ? 'true' : 'false'}
+            aria-pressed={frontmatterPanelVisible() ? 'true' : 'false'}
+            onClick={handleToggleFrontmatterPanel}
+            disabled={!editorStore.frontmatter()}
+            data-test="header-frontmatter-panel-toggle"
+            title={formatShortcutTitle('Toggle frontmatter panel', 'toggle-frontmatter-panel')}
+          >
+            Frontmatter
           </button>
           <label class="select-field typography-select" data-placeholder="Typography style">
             <span class="sr-only">Typography preset</span>

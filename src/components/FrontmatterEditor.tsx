@@ -6,6 +6,7 @@ import { syntaxHighlighting, HighlightStyle, syntaxTree } from '@codemirror/lang
 import { tags } from '@lezer/highlight';
 import { yaml } from '@codemirror/lang-yaml';
 import { normalizeFrontmatterContent } from '../lib/frontmatter';
+import { setFrontmatterEditorVisible } from '../state/ui';
 
 type FrontmatterEditorProps = {
   value: Accessor<string>;
@@ -214,8 +215,18 @@ const theme = EditorView.theme(
   return (
     <div class="frontmatter-editor" data-test="frontmatter-editor">
       <div class="frontmatter-editor__header">
-        <p>Frontmatter</p>
-        <span>YAML</span>
+        <div class="frontmatter-editor__header-title">
+          <p>Frontmatter</p>
+          <span>YAML</span>
+        </div>
+        <button
+          type="button"
+          class="frontmatter-editor__close"
+          aria-label="Close frontmatter editor"
+          onClick={() => setFrontmatterEditorVisible(false)}
+        >
+          ×
+        </button>
       </div>
       <div class="frontmatter-editor__cm" ref={(node) => (containerRef = node ?? containerRef)} />
     </div>

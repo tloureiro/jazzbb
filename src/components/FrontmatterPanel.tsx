@@ -1,6 +1,6 @@
 import { For, Show, createMemo, type Component, type JSXElement } from 'solid-js';
 import { editorStore } from '../state/editor';
-import { setFrontmatterVisible } from '../state/ui';
+import { setFrontmatterPanelVisible } from '../state/ui';
 
 function renderValue(value: unknown): JSXElement {
   if (Array.isArray(value)) {
@@ -66,12 +66,12 @@ const FrontmatterPanel: Component = () => {
 
   return (
     <aside class="frontmatter-panel" aria-label="Frontmatter details">
-      <header class="pane-header">
-        <h2>Frontmatter</h2>
-        <button type="button" class="panel-close" onClick={() => setFrontmatterVisible(false)} aria-label="Hide frontmatter panel">
-          ×
-        </button>
-      </header>
+        <header class="pane-header">
+          <h2>Frontmatter</h2>
+          <button type="button" class="panel-close" onClick={() => setFrontmatterPanelVisible(false)} aria-label="Hide frontmatter panel">
+            ×
+          </button>
+        </header>
       <Show when={info()} fallback={<p class="empty-state">This note does not include frontmatter.</p>}>
         <div class="frontmatter-panel__body">
           <Show when={metadata()?.error}>

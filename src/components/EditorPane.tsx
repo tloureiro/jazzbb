@@ -10,8 +10,8 @@ import {
   showToast,
   isPlainMarkdownMode,
   togglePlainMarkdownMode,
-  isFrontmatterVisible,
-  toggleFrontmatterVisibility,
+  isFrontmatterEditorVisible,
+  toggleFrontmatterEditorVisibility,
 } from '../state/ui';
 import { workspaceStore, isVaultMode } from '../state/workspace';
 import { renameNote } from '../platform/note-manager';
@@ -38,7 +38,7 @@ const EditorPane: Component = () => {
   );
 
   const plainMode = isPlainMarkdownMode;
-  const frontmatterVisible = isFrontmatterVisible;
+  const frontmatterEditorVisible = isFrontmatterEditorVisible;
   const frontmatterSection = editorStore.frontmatter;
   const formatShortcutTitle = (label: string, id: Parameters<typeof getShortcutLabel>[0]) => {
     shortcutsVersion();
@@ -129,12 +129,12 @@ const EditorPane: Component = () => {
     applyDraftUpdate(nextValue);
   };
 
-  const requestFrontmatterToggle = (): boolean => {
+  const requestFrontmatterEditorToggle = (): boolean => {
     if (!frontmatterSection()) {
       showToast('This note has no frontmatter yet.', 'info');
       return false;
     }
-    toggleFrontmatterVisibility();
+    toggleFrontmatterEditorVisibility();
     return true;
   };
 
@@ -249,8 +249,8 @@ const EditorPane: Component = () => {
       return;
     }
 
-    if (isShortcutEvent(event, 'toggle-frontmatter')) {
-      const handled = requestFrontmatterToggle();
+    if (isShortcutEvent(event, 'toggle-frontmatter-editor')) {
+      const handled = requestFrontmatterEditorToggle();
       if (handled) {
         event.preventDefault();
       }
@@ -380,7 +380,7 @@ const EditorPane: Component = () => {
         __toggleFrontmatterVisibility?: () => boolean;
         __togglePlainMode?: () => void;
       };
-      runtime.__toggleFrontmatterVisibility = () => requestFrontmatterToggle();
+      runtime.__toggleFrontmatterVisibility = () => requestFrontmatterEditorToggle();
       runtime.__togglePlainMode = () => {
         togglePlainMarkdownMode();
       };
@@ -551,11 +551,15 @@ const EditorPane: Component = () => {
               <button
                 type="button"
                 class="frontmatter-indicator"
-                aria-label={frontmatterVisible() ? 'Hide frontmatter' : 'Show frontmatter'}
-                title={frontmatterVisible() ? 'Hide frontmatter' : 'Show frontmatter'}
-                data-active={frontmatterVisible() ? 'true' : 'false'}
+                aria-label={
+                  frontmatterEditorVisible() ? 'Hide frontmatter editor' : 'Display frontmatter editor'
+                }
+                title={
+                  frontmatterEditorVisible() ? 'Hide frontmatter editor' : 'Display frontmatter editor'
+                }
+                data-active={frontmatterEditorVisible() ? 'true' : 'false'}
                 onClick={() => {
-                  requestFrontmatterToggle();
+                  requestFrontmatterEditorToggle();
                 }}
               >
                 FM
@@ -577,7 +581,7 @@ const EditorPane: Component = () => {
         </div>
       </header>
       <div class="editor-container" ref={containerRef}>
-        <Show when={!plainMode() && frontmatterVisible() && frontmatterSection()}>
+        <Show when={!plainMode() && frontmatterEditorVisible() && frontmatterSection()}>
           <FrontmatterEditor value={frontmatterContent} onChange={handleFrontmatterChange} />
         </Show>
         <div class="rich-editor-host" classList={{ 'is-hidden': plainMode() }}>

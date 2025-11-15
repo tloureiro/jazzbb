@@ -19,7 +19,8 @@ import {
   setOutlineWidthPercent,
   resetSidebarWidthPercent,
   resetOutlineWidthPercent,
-  isFrontmatterVisible,
+  isFrontmatterPanelVisible,
+  setFrontmatterPanelVisible,
   setOutlineVisible,
 } from './state/ui';
 import { grammarlyStore } from './state/grammarly';
@@ -31,12 +32,19 @@ const App: Component = () => {
   const sidebarCollapsed = isSidebarCollapsed;
   const sidebarVisible = () => vaultActive() && !sidebarCollapsed();
   const outlineVisible = isOutlineVisible;
-  const frontmatterVisible = isFrontmatterVisible;
+  const frontmatterPanelVisible = isFrontmatterPanelVisible;
   const headerCollapsed = isHeaderCollapsed;
   const sidebarWidth = sidebarWidthPercent;
   const outlineWidth = outlineWidthPercent;
-  const frontmatterPanelActive = createMemo(() => frontmatterVisible() && Boolean(editorStore.frontmatter()));
+  const frontmatterPanelActive = createMemo(
+    () => frontmatterPanelVisible() && Boolean(editorStore.frontmatter()),
+  );
   const panelColumnVisible = createMemo(() => outlineVisible() || frontmatterPanelActive());
+  createEffect(() => {
+    if (!editorStore.frontmatter() && frontmatterPanelVisible()) {
+      setFrontmatterPanelVisible(false);
+    }
+  });
   const RESIZE_HANDLE_WIDTH = '1rem';
   let layoutSectionRef: HTMLElement | undefined;
   const [shortcutsVersion, setShortcutsVersion] = createSignal(0);

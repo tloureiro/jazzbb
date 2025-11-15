@@ -290,16 +290,26 @@ export function setLastCommandId(id: string | undefined): void {
   }
 }
 
-const [frontmatterVisibleSignal, setFrontmatterVisibleSignal] = createSignal(false);
+const [frontmatterEditorVisibleSignal, setFrontmatterEditorVisibleSignal] = createSignal(false);
+const [frontmatterPanelVisibleSignal, setFrontmatterPanelVisibleSignal] = createSignal(false);
 
-export const isFrontmatterVisible = frontmatterVisibleSignal;
+export const isFrontmatterEditorVisible = frontmatterEditorVisibleSignal;
+export const isFrontmatterPanelVisible = frontmatterPanelVisibleSignal;
 
-export function setFrontmatterVisible(visible: boolean): void {
-  setFrontmatterVisibleSignal(visible);
+export function setFrontmatterEditorVisible(visible: boolean): void {
+  setFrontmatterEditorVisibleSignal(visible);
 }
 
-export function toggleFrontmatterVisibility(): void {
-  setFrontmatterVisibleSignal((prev) => !prev);
+export function toggleFrontmatterEditorVisibility(): void {
+  setFrontmatterEditorVisibleSignal((prev) => !prev);
+}
+
+export function setFrontmatterPanelVisible(visible: boolean): void {
+  setFrontmatterPanelVisibleSignal(visible);
+}
+
+export function toggleFrontmatterPanelVisibility(): void {
+  setFrontmatterPanelVisibleSignal((prev) => !prev);
 }
 
 export function setSidebarCollapsed(collapsed: boolean): void {

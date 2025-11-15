@@ -1344,9 +1344,15 @@ button, select, input, textarea {
   overflow-x: hidden;
   overflow-y: auto;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-start;
   align-items: stretch;
+  gap: 0.75rem;
   flex: 1 1 auto;
+}
+
+.editor-container > .frontmatter-editor {
+  width: 100%;
 }
 
 .rich-editor-host {
@@ -1572,6 +1578,8 @@ button, select, input, textarea {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .frontmatter-key {
@@ -1584,6 +1592,8 @@ button, select, input, textarea {
 .frontmatter-value {
   font-family: var(--editor-font-body);
   color: var(--color-text);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .frontmatter-object {
@@ -1606,6 +1616,8 @@ button, select, input, textarea {
   border-radius: var(--radius-sm);
   padding: 0.45rem 0.6rem;
   background: color-mix(in srgb, var(--color-surface-strong) 80%, transparent);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .frontmatter-list-index {
@@ -2262,17 +2274,47 @@ button, select, input, textarea {
 
 .frontmatter-editor__header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-text-muted);
   margin-bottom: 0.35rem;
+  gap: 0.5rem;
 }
 
-.frontmatter-editor__header span {
+.frontmatter-editor__header-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.frontmatter-editor__header-title span {
   font-size: 0.7rem;
+}
+
+.frontmatter-editor__close {
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 999px;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.frontmatter-editor__close:hover,
+.frontmatter-editor__close:focus-visible {
+  background: color-mix(in srgb, var(--color-text-muted) 20%, transparent);
+  color: var(--color-text);
 }
 
 .frontmatter-editor__cm {

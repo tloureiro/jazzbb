@@ -27,6 +27,13 @@ function normalize(text: string): string {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
+function matchesQueryTokens(tokens: string[], command: CommandPaletteCommand): boolean {
+  const haystack = [command.label, command.subtitle ?? '', command.keywords ?? '']
+    .map((part) => normalize(part))
+    .join(' ');
+  return tokens.every((token) => haystack.includes(token));
+}
+
 const CommandPalette: Component<CommandPaletteProps> = (props) => {
   const [query, setQuery] = createSignal('');
   const [highlightedIndex, setHighlightedIndex] = createSignal(0);
@@ -39,9 +46,9 @@ const CommandPalette: Component<CommandPaletteProps> = (props) => {
   );
 
   const filteredCommands = createMemo(() => {
-    const value = normalize(query());
+    const value = normalize(query()).trim();
     const items = props.commands();
-    if (!value.trim()) {
+    if (!value) {
       const lastId = props.initialCommandId?.();
       if (!lastId) {
         return items;
@@ -55,12 +62,11 @@ const CommandPalette: Component<CommandPaletteProps> = (props) => {
       reordered.unshift(command);
       return reordered;
     }
-    return items.filter((command) => {
-      const haystack = [command.label, command.subtitle ?? '', command.keywords ?? '']
-        .map((part) => normalize(part))
-        .join(' ');
-      return haystack.includes(value);
-    });
+    const tokens = value.split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) {
+      return items;
+    }
+    return items.filter((command) => matchesQueryTokens(tokens, command));
   });
 
   createEffect(() => {
