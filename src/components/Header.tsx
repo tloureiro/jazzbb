@@ -31,6 +31,8 @@ import {
   togglePlainMarkdownMode,
   isFrontmatterVisible,
   toggleFrontmatterVisibility,
+  lastCommandId,
+  setLastCommandId,
   colorScheme,
   setColorScheme,
   colorSchemeOptions,
@@ -594,6 +596,14 @@ const Header: Component = () => {
 
   onMount(() => {
     window.addEventListener('keydown', handleKeydown);
+    let runtime: (typeof window & { __openCommandPalette?: () => void }) | undefined;
+    if (typeof window !== 'undefined') {
+      runtime = window as typeof window & { __openCommandPalette?: () => void };
+      runtime.__openCommandPalette = () => {
+        setShowSearch(false);
+        setShowCommandPalette(true);
+      };
+    }
     const unsubscribe = subscribeBrowserVaultEstimate((estimate) => {
       if (!estimate) {
         setStorageEstimate(null);
@@ -609,6 +619,9 @@ const Header: Component = () => {
     onCleanup(() => {
       unsubscribe();
       window.removeEventListener('keydown', handleKeydown);
+      if (runtime) {
+        delete runtime.__openCommandPalette;
+      }
     });
   });
 
@@ -890,7 +903,12 @@ const Header: Component = () => {
         </Show>
       </header>
       <Show when={showCommandPalette()}>
-        <CommandPalette commands={commandItems} onClose={() => setShowCommandPalette(false)} />
+        <CommandPalette
+          commands={commandItems}
+          initialCommandId={lastCommandId}
+          onCommandRun={(id) => setLastCommandId(id)}
+          onClose={() => setShowCommandPalette(false)}
+        />
       </Show>
       <Show when={showShortcuts()}>
         <ShortcutHelpModal onClose={() => setShowShortcuts(false)} footer={helpFooter()} />

@@ -18,6 +18,11 @@
     "check": "npm run lint && npm run test && npm run test:e2e"
   },
   "dependencies": {
+    "@codemirror/commands": "^6.10.0",
+    "@codemirror/lang-yaml": "^6.1.2",
+    "@codemirror/language": "^6.11.3",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.38.7",
     "@fontsource-variable/dm-sans": "^5.2.8",
     "@fontsource-variable/eb-garamond": "^5.2.7",
     "@fontsource-variable/fira-code": "^5.2.7",
@@ -62,6 +67,7 @@
     "@solidjs/testing-library": "^0.8.6",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.4.6",
+    "@types/js-yaml": "^4.0.9",
     "@types/markdown-it": "^14.1.2",
     "@types/markdown-it-footnote": "^3.0.4",
     "@types/node": "^20.11.30",

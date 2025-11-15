@@ -108,10 +108,16 @@ const EditorPane: Component = () => {
   };
 
   const handleChange = (value: string) => {
+    if (plainMode()) {
+      applyDraftUpdate(value);
+      return;
+    }
     const frontmatter = frontmatterSection();
-    const shouldAttachFrontmatter = !plainMode() && !frontmatterVisible();
-    const nextValue = shouldAttachFrontmatter && frontmatter ? `${frontmatter.raw}${value}` : value;
-    applyDraftUpdate(nextValue);
+    if (!frontmatter) {
+      applyDraftUpdate(value);
+      return;
+    }
+    applyDraftUpdate(`${frontmatter.raw}${value}`);
   };
 
   const handleFrontmatterChange = (content: string) => {
@@ -369,6 +375,16 @@ const EditorPane: Component = () => {
       runtime.__requestAutoExpand = () => editorStore.requestAutoExpandOnNextSelection();
     }
     containerRef?.addEventListener('pointerdown', handleContainerMouseDownCapture, { capture: true });
+    if (typeof window !== 'undefined') {
+      const runtime = window as typeof window & {
+        __toggleFrontmatterVisibility?: () => boolean;
+        __togglePlainMode?: () => void;
+      };
+      runtime.__toggleFrontmatterVisibility = () => requestFrontmatterToggle();
+      runtime.__togglePlainMode = () => {
+        togglePlainMarkdownMode();
+      };
+    }
   });
 
   onCleanup(() => {
@@ -376,9 +392,21 @@ const EditorPane: Component = () => {
     containerRef?.removeEventListener('pointerdown', handleContainerMouseDownCapture, { capture: true });
     if (typeof window !== 'undefined') {
       const runtime = window as typeof window & { __requestAutoExpand?: () => void };
-      if (runtime.__requestAutoExpand) {
-        delete runtime.__requestAutoExpand;
+    if (runtime.__requestAutoExpand) {
+      delete runtime.__requestAutoExpand;
+    }
+    if (typeof window !== 'undefined') {
+      const toggleRuntime = window as typeof window & {
+        __toggleFrontmatterVisibility?: () => boolean;
+        __togglePlainMode?: () => void;
+      };
+      if (toggleRuntime.__toggleFrontmatterVisibility) {
+        delete toggleRuntime.__toggleFrontmatterVisibility;
       }
+      if (toggleRuntime.__togglePlainMode) {
+        delete toggleRuntime.__togglePlainMode;
+      }
+    }
     }
     if (parseTimer !== undefined) {
       window.clearTimeout(parseTimer);
@@ -481,6 +509,10 @@ const EditorPane: Component = () => {
     }
 
     if (target.closest('.tiptap-editor')) {
+      return;
+    }
+
+    if (!plainMode() && target.closest('.frontmatter-editor')) {
       return;
     }
 

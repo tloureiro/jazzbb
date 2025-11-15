@@ -252,12 +252,42 @@ export function setSidebarHoverVisible(value: boolean): void {
   applySidebarHover(value);
 }
 
+const LAST_COMMAND_STORAGE_KEY = 'jazzbb::last-command';
+
+function readLastCommandId(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    return window.localStorage.getItem(LAST_COMMAND_STORAGE_KEY) ?? undefined;
+  } catch (error) {
+    console.warn('Failed to read last command id', error);
+    return undefined;
+  }
+}
+
 const [plainMarkdownModeSignal, setPlainMarkdownModeSignal] = createSignal(false);
 
 export const isPlainMarkdownMode = plainMarkdownModeSignal;
 
 export function togglePlainMarkdownMode(): void {
   setPlainMarkdownModeSignal((prev) => !prev);
+}
+
+const [lastCommandIdSignal, setLastCommandIdSignal] = createSignal<string | undefined>(readLastCommandId());
+
+export const lastCommandId = lastCommandIdSignal;
+
+export function setLastCommandId(id: string | undefined): void {
+  setLastCommandIdSignal(id);
+  if (typeof window === 'undefined') return;
+  try {
+    if (id) {
+      window.localStorage.setItem(LAST_COMMAND_STORAGE_KEY, id);
+    } else {
+      window.localStorage.removeItem(LAST_COMMAND_STORAGE_KEY);
+    }
+  } catch (error) {
+    console.warn('Failed to persist last command id', error);
+  }
 }
 
 const [frontmatterVisibleSignal, setFrontmatterVisibleSignal] = createSignal(false);
@@ -336,6 +366,10 @@ export function setEditorMeasureScale(scale: number): void {
 const [isOutlineVisibleSignal, setOutlineVisibleSignal] = createSignal(false);
 
 export const isOutlineVisible = isOutlineVisibleSignal;
+
+export function setOutlineVisible(visible: boolean): void {
+  setOutlineVisibleSignal(visible);
+}
 
 export function toggleOutlineVisibility(): void {
   setOutlineVisibleSignal((prev) => !prev);

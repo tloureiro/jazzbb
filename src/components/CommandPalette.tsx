@@ -16,6 +16,8 @@ export type CommandPaletteCommand = {
 export type CommandPaletteProps = {
   commands: Accessor<ReadonlyArray<CommandPaletteCommand>>;
   onClose: () => void;
+  initialCommandId?: Accessor<string | undefined>;
+  onCommandRun?: (id: string) => void;
 };
 
 function normalize(text: string): string {
@@ -40,7 +42,18 @@ const CommandPalette: Component<CommandPaletteProps> = (props) => {
     const value = normalize(query());
     const items = props.commands();
     if (!value.trim()) {
-      return items;
+      const lastId = props.initialCommandId?.();
+      if (!lastId) {
+        return items;
+      }
+      const index = items.findIndex((command) => command.id === lastId);
+      if (index <= 0) {
+        return items;
+      }
+      const reordered = items.slice();
+      const [command] = reordered.splice(index, 1);
+      reordered.unshift(command);
+      return reordered;
     }
     return items.filter((command) => {
       const haystack = [command.label, command.subtitle ?? '', command.keywords ?? '']
@@ -64,11 +77,24 @@ const CommandPalette: Component<CommandPaletteProps> = (props) => {
     setHighlightedIndex(0);
   });
 
+  createEffect(() => {
+    const lastId = props.initialCommandId?.();
+    const list = filteredCommands();
+    if (!lastId || query().trim() || list.length === 0) {
+      return;
+    }
+    const targetIndex = list.findIndex((command) => command.id === lastId);
+    if (targetIndex >= 0) {
+      setHighlightedIndex(targetIndex);
+    }
+  });
+
   const handleRun = async (command: CommandPaletteCommand) => {
     if (command.disabled) {
       return;
     }
     await command.run();
+    props.onCommandRun?.(command.id);
     props.onClose();
   };
 

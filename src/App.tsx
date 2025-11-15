@@ -20,6 +20,7 @@ import {
   resetSidebarWidthPercent,
   resetOutlineWidthPercent,
   isFrontmatterVisible,
+  setOutlineVisible,
 } from './state/ui';
 import { grammarlyStore } from './state/grammarly';
 import { getShortcutLabel, subscribeToShortcutChanges } from './lib/shortcuts';
@@ -161,12 +162,22 @@ const App: Component = () => {
       const runtime = window as typeof window & {
         __setSidebarCollapsed?: (value: boolean) => void;
         __setWorkspaceMode?: (mode: WorkspaceMode) => void;
+        __toggleOutlinePanel?: (next?: boolean) => boolean;
       };
       runtime.__setSidebarCollapsed = setSidebarCollapsed;
       runtime.__setWorkspaceMode = workspaceStore.setMode;
+      runtime.__toggleOutlinePanel = (next?: boolean) => {
+        if (typeof next === 'boolean') {
+          setOutlineVisible(next);
+        } else {
+          setOutlineVisible(!outlineVisible());
+        }
+        return outlineVisible();
+      };
       onCleanup(() => {
         delete runtime.__setSidebarCollapsed;
         delete runtime.__setWorkspaceMode;
+        delete runtime.__toggleOutlinePanel;
       });
     }
     onCleanup(() => {
