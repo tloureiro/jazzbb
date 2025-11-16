@@ -17,14 +17,15 @@ jazzbb is an offline-first markdown editor/hub that runs entirely in the browser
 - **Outline navigator**: Toggle a live heading tree (Ctrl/Cmd+Shift+O), collapse/expand levels with arrow keys, and jump between sections without leaving the editor.
 - **Collapsible headings**: Fold any heading inline via the new caret control or `Ctrl/Cmd + Alt/Option + K`. Collapsed sections auto-expand when search jumps into them.
 - **Editable titles**: Rename vault notes in the editor header or inline in the sidebar (double-click a note to edit). Names now preserve spacing/casing in browser vault and single-file modes.
-- **Frontmatter tools**: YAML frontmatter lives in a compact editor bar that slides in above the main canvas; use the `FM` badge (or `Ctrl/Cmd+Alt+F` / palette command) to display it, the new close icon to dismiss it if you prefer a clean canvas, and the separate outline panel display controls or `Ctrl/Cmd+Alt+Shift+F` to show the parsed metadata panel in the sidebar.
+- **Frontmatter tools**: YAML frontmatter stays hidden until you toggle it; the `FM` badge (or `Ctrl/Cmd+Alt+F` / palette command) now opens a syntax-highlighted CodeMirror block above the editor and simultaneously reveals the read-only metadata panel in the sidebar. Close either surface and both disappear so they remain in sync.
 - **Command palette**: `Ctrl/Cmd+K` opens a searchable list of every action. The palette now tokenizes your query, so you can still find “search notes” by typing “find notes” or say “show frontmatter” even though the labels read “Display…”. It also remembers the last command you ran and surfaces it to the top when the query is empty, letting you reopen it and press Enter to repeat the previous action (toggling commands respect this history, too).
 
-## Release 0.2.5
+## Release 0.2.6
 
-- Renamed the “Toggle Grammarly overlays” action to **Toggle grammar checks** (`⌘⌥G` / `Ctrl+Alt+G`) so it now covers both browser spellcheck and any Grammarly overlays via a single command and shortcut.
-- The TipTap editor’s spellcheck attribute listens to the new toggle, keeping browser-native grammar suggestions in sync with the suppression CSS that hides Grammarly additions.
-- Header toast copy, command-palette labels, and README references now describe the combined grammar-checks toggle so discoverability matches the broader behavior.
+- Frontmatter editing moved to a dedicated CodeMirror YAML surface with palette-aware token colours and proper focus handling; toggling it also opens/closes the structured frontmatter panel so the views never drift apart.
+- The frontmatter indicator doubles as a discrete “frontmatter available” badge—click it, use `Ctrl/Cmd+Alt+F`, or run the palette command (which also remembers the last action you executed) to show/hide both editor and panel.
+- Header controls slimmed down: typography and palette selects now collapse to content width, reducing the top bar height and reclaiming horizontal space across smaller screens.
+- Added a ready-to-use vault under `samples/vault-sample/` with ten markdown files that cover agendas, journals, YAML metadata, and regressions, making it easier to demo or test vault mode locally.
 
 ## Shortcut reference
 
@@ -56,6 +57,10 @@ Visit the dev server (default `http://localhost:5173`), then press **Open vault*
 - The header badge indicates the active workspace (`Browser vault`, `File vault`, or `Single file`).
 - Export the current browser vault as a `.zip`, import an archived vault, or reset/delete it from the help panel (`?` button).
 - Hit the app with `?empty`, `?e`, or `?default` to load the default scratch workspace without restoring stored data. Notes/configs persist for the next normal load.
+
+### Sample vault
+
+Point the “Open vault” picker at `samples/vault-sample/` to load ten ready-made markdown files that exercise frontmatter, outlines, tasks, and general editing flows. It’s handy for demos, automated tests, or verifying release builds without touching your personal notes.
 
 ### Running Tests & Linting
 
