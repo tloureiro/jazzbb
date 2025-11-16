@@ -1,6 +1,6 @@
 # jazzbb
 
-jazzbb is an offline-first markdown editor / hub that runs entirely in the browser. It operates directly on local markdown vaults using the File System Access API, provides a live editor powered by TipTap (ProseMirror), and keeps search, metadata, and UI state in sync without any network calls.
+jazzbb is an offline-first markdown editor/hub that runs entirely in the browser. It operates directly on local markdown vaults using the File System Access API, provides a live editor powered by TipTap (ProseMirror), and keeps search, metadata, and UI state in sync without any network calls.
 
 ## Features
 

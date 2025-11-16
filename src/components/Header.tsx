@@ -32,7 +32,6 @@ import {
   isFrontmatterEditorVisible,
   toggleFrontmatterEditorVisibility,
   isFrontmatterPanelVisible,
-  toggleFrontmatterPanelVisibility,
   lastCommandId,
   setLastCommandId,
   colorScheme,
@@ -375,11 +374,6 @@ const Header: Component = () => {
     toggleFrontmatterEditorVisibility();
   };
 
-  const handleToggleFrontmatterPanel = () => {
-    if (!ensureFrontmatterAvailable()) return;
-    toggleFrontmatterPanelVisibility();
-  };
-
   const commandItems = createMemo<ReadonlyArray<CommandPaletteCommand>>(() => {
     shortcutsVersion();
     const themeMode = currentTheme();
@@ -466,14 +460,6 @@ const Header: Component = () => {
         keywords: 'frontmatter metadata yaml editor display show',
         disabled: !editorStore.frontmatter(),
         run: handleToggleFrontmatterEditor,
-      },
-      {
-        id: 'toggle-frontmatter-panel',
-        label: frontmatterPanelVisible() ? 'Hide frontmatter panel' : 'Display frontmatter panel',
-        shortcut: getShortcutLabel('toggle-frontmatter-panel'),
-        keywords: 'frontmatter metadata yaml panel display show',
-        disabled: !editorStore.frontmatter(),
-        run: handleToggleFrontmatterPanel,
       },
       {
         id: 'toggle-sidebar',
@@ -596,12 +582,6 @@ const Header: Component = () => {
       return;
     }
 
-    if (isShortcutEvent(event, 'toggle-frontmatter-panel')) {
-      event.preventDefault();
-      handleToggleFrontmatterPanel();
-      return;
-    }
-
     if (isShortcutEvent(event, 'new-note')) {
       if (!isVaultMode()) return;
       event.preventDefault();
@@ -706,7 +686,7 @@ const Header: Component = () => {
         <div class="header-row header-row-top">
           <div class="header-left">
             <h1>jazzbb</h1>
-            <p class="tagline">markdown editor / hub</p>
+            <p class="tagline">markdown editor/hub</p>
           </div>
           <div class="header-actions">
           <button
@@ -776,10 +756,10 @@ const Header: Component = () => {
             class="secondary"
             data-active={frontmatterPanelVisible() ? 'true' : 'false'}
             aria-pressed={frontmatterPanelVisible() ? 'true' : 'false'}
-            onClick={handleToggleFrontmatterPanel}
+            onClick={handleToggleFrontmatterEditor}
             disabled={!editorStore.frontmatter()}
             data-test="header-frontmatter-panel-toggle"
-            title={formatShortcutTitle('Toggle frontmatter panel', 'toggle-frontmatter-panel')}
+            title={formatShortcutTitle('Toggle frontmatter editor', 'toggle-frontmatter-editor')}
           >
             Frontmatter
           </button>

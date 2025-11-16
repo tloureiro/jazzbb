@@ -17,7 +17,6 @@ _Agents: whenever a shortcut definition, label, binding, or purpose changes, upd
 | `toggle-grammar-checks` | Toggle grammar checks (browser + Grammarly) | `⌘⌥G` | |
 | `toggle-heading-collapse` | Toggle collapse for the current heading | `⌘⌥K` | |
 | `toggle-frontmatter-editor` | Toggle the embedded frontmatter editor | `⌘⌥F` | Requires frontmatter |
-| `toggle-frontmatter-panel` | Toggle the sidebar frontmatter panel | `⇧⌘⌥F` | Requires frontmatter |
 | `toggle-plain-markdown` | Toggle plain Markdown view | `⌘⌥M` | |
 | `delete-line` | Delete the current line | `⌘D` | |
 | `escape` | Close dialogs or dismiss overlays | `Esc` | |
@@ -39,7 +38,6 @@ _Agents: whenever a shortcut definition, label, binding, or purpose changes, upd
 | `toggle-grammar-checks` | Toggle grammar checks (browser + Grammarly) | `Ctrl+Alt+G` | |
 | `toggle-heading-collapse` | Toggle collapse for the current heading | `Ctrl+Alt+K` | |
 | `toggle-frontmatter-editor` | Toggle the embedded frontmatter editor | `Ctrl+Alt+F` | Requires frontmatter |
-| `toggle-frontmatter-panel` | Toggle the sidebar frontmatter panel | `Ctrl+Alt+Shift+F` | Requires frontmatter |
 | `toggle-plain-markdown` | Toggle plain Markdown view | `Ctrl+Alt+M` | |
 | `delete-line` | Delete the current line | `Ctrl+D` | |
 | `escape` | Close dialogs or dismiss overlays | `Esc` | |
