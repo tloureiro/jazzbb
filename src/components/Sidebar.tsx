@@ -2,12 +2,13 @@ import { Component, For, Show, createEffect, createSignal, onCleanup } from 'sol
 import { vaultStore } from '../state/vault';
 import { openNote } from '../platform/note-reader';
 import { createNote, deleteNote, renameNote } from '../platform/note-manager';
-import { isVaultMode } from '../state/workspace';
+import { isVaultMode, isBrowserVaultMode } from '../state/workspace';
 import { setSidebarCollapsed } from '../state/ui';
 import { getShortcutLabel, subscribeToShortcutChanges } from '../lib/shortcuts';
 
 const Sidebar: Component = () => {
   const notes = () => vaultStore.state.notes;
+  const currentSortMode = () => vaultStore.sortMode();
   const [editingPath, setEditingPath] = createSignal<string | undefined>();
   const [editingValue, setEditingValue] = createSignal('');
   const [shortcutsVersion, setShortcutsVersion] = createSignal(0);
@@ -22,6 +23,11 @@ const Sidebar: Component = () => {
   const handleCreate = async () => {
     if (!isVaultMode()) return;
     await createNote();
+  };
+
+  const handleSortChange = (mode: 'name' | 'modified') => {
+    if (currentSortMode() === mode) return;
+    vaultStore.setSortMode(mode);
   };
 
   const formatShortcutTitle = (label: string, id: Parameters<typeof getShortcutLabel>[0]) => {
@@ -104,8 +110,31 @@ const Sidebar: Component = () => {
       <aside class="sidebar" aria-label="Vault navigator">
         <header class="sidebar-header">
           <div class="sidebar-title">
-            <Show when={vaultStore.state.notes.length > 0}>
-              <span class="sidebar-badge" data-variant="browser">Browser vault</span>
+            <span
+              class="sidebar-badge"
+              data-variant={isBrowserVaultMode() ? 'browser' : 'filesystem'}
+            >
+              {isBrowserVaultMode() ? 'Browser vault' : 'File vault'}
+            </span>
+            <Show when={!isBrowserVaultMode()}>
+              <div class="sidebar-sort">
+                <button
+                  type="button"
+                  class="sidebar-sort-button"
+                  data-active={currentSortMode() === 'name' ? 'true' : 'false'}
+                  onClick={() => handleSortChange('name')}
+                >
+                  Note name
+                </button>
+                <button
+                  type="button"
+                  class="sidebar-sort-button"
+                  data-active={currentSortMode() === 'modified' ? 'true' : 'false'}
+                  onClick={() => handleSortChange('modified')}
+                >
+                  Modified date
+                </button>
+              </div>
             </Show>
             <button
               type="button"

@@ -17,6 +17,7 @@ export type VaultState = {
   cache: Record<string, NoteCache>;
   selectedPath?: string;
   handle?: VaultHandle;
+  sortMode: 'name' | 'modified';
 };
 
 const initialVaultState: VaultState = {
@@ -25,21 +26,40 @@ const initialVaultState: VaultState = {
   cache: {},
   selectedPath: undefined,
   handle: undefined,
+  sortMode: 'name',
 };
 
 const [vault, setVault] = createStore<VaultState>({ ...initialVaultState });
 const [isLoading, setIsLoading] = createSignal(false);
 const [error, setError] = createSignal<string | null>(null);
 
+function sortNotes(notes: NoteMeta[], mode: 'name' | 'modified'): NoteMeta[] {
+  if (mode === 'modified') {
+    return notes.sort((a, b) => b.lastModified - a.lastModified || a.path.localeCompare(b.path));
+  }
+  return notes.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+function reorderNotes(mode: 'name' | 'modified'): void {
+  setVault('notes', (notes) => sortNotes([...notes], mode));
+}
+
 export const vaultStore = {
   state: vault,
   isLoading,
   error,
+  sortMode() {
+    return vault.sortMode;
+  },
   setNotes(notes: NoteMeta[]) {
-    setVault('notes', () => notes);
+    setVault('notes', () => sortNotes([...notes], vault.sortMode));
   },
   setHandle(handle: VaultHandle | undefined) {
     setVault('handle', () => handle);
+  },
+  setSortMode(mode: 'name' | 'modified') {
+    setVault('sortMode', () => mode);
+    reorderNotes(mode);
   },
   setHandles(handles: Record<string, FileSystemFileHandle | null>) {
     setVault('handles', () => handles);
@@ -50,11 +70,14 @@ export const vaultStore = {
   updateNote(meta: NoteMeta) {
     const index = vault.notes.findIndex((note) => note.path === meta.path);
     if (index !== -1) {
-      setVault('notes', index, () => meta);
+      setVault('notes', () => sortNotes(
+        vault.notes.map((note) => (note.path === meta.path ? meta : note)),
+        vault.sortMode,
+      ));
     }
   },
   addNote(meta: NoteMeta, handle: FileSystemFileHandle | null, cache: NoteCache) {
-    setVault('notes', (notes) => [...notes, meta].sort((a, b) => a.path.localeCompare(b.path)));
+    setVault('notes', (notes) => sortNotes([...notes, meta], vault.sortMode));
     setVault('handles', (handles) => ({ ...handles, [meta.path]: handle }));
     setVault('cache', (cacheMap) => ({ ...cacheMap, [meta.path]: cache }));
     setVault('selectedPath', meta.path);
@@ -96,6 +119,7 @@ export const vaultStore = {
     });
     setVault('selectedPath', () => undefined);
     setVault('handle', () => undefined);
+    setVault('sortMode', () => 'name');
     setIsLoading(false);
     setError(null);
   }

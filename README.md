@@ -4,7 +4,7 @@ jazzbb is an offline-first markdown editor/hub that runs entirely in the browser
 
 ## Features
 
-- **Vault management**: open a local folder, read/write `.md` files in place, and manage notes (create, rename, delete) from the sidebar.
+- **Vault management**: open a local folder, read/write `.md` files in place, and manage notes (create, rename, delete) from the sidebar, now with a note name/modified date sort toggle in file vaults.
 - **Single-file mode**: work from a standalone scratch note, then use the header save controls to either store it in the browser vault or write it to disk—with autosave staying off for manual control.
 - **Live editor**: Single-pane TipTap / ProseMirror surface that renders Markdown inline as you type. Debounced worker parsing keeps typing responsive while the editor shows formatted content.
 - **External change detection**: Single-file sessions poll the opened handle every two seconds and reload changes written by other editors (Chromium browsers only); unsaved edits trigger a warning instead of overwriting.
@@ -25,6 +25,7 @@ jazzbb is an offline-first markdown editor/hub that runs entirely in the browser
 - Frontmatter editing moved to a dedicated CodeMirror YAML surface with palette-aware token colours and proper focus handling; toggling it also opens/closes the structured frontmatter panel so the views never drift apart.
 - The frontmatter indicator doubles as a discrete “frontmatter available” badge—click it, use `Ctrl/Cmd+Alt+F`, or run the palette command (which also remembers the last action you executed) to show/hide both editor and panel.
 - Header controls slimmed down: typography and palette selects now collapse to content width, reducing the top bar height and reclaiming horizontal space across smaller screens.
+- File vaults now label themselves correctly in the sidebar and expose a compact sort toggle (Note name vs. Modified date) so you can jump between alphabetical and chronological views, matching the workflow you need.
 - Added a ready-to-use vault under `samples/vault-sample/` with ten markdown files that cover agendas, journals, YAML metadata, and regressions, making it easier to demo or test vault mode locally.
 
 ## Shortcut reference
