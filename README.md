@@ -20,13 +20,8 @@ jazzbb is an offline-first markdown editor/hub that runs entirely in the browser
 - **Frontmatter tools**: YAML frontmatter stays hidden until you toggle it; the `FM` badge (or `Ctrl/Cmd+Alt+F` / palette command) now opens a syntax-highlighted CodeMirror block above the editor and simultaneously reveals the read-only metadata panel in the sidebar. Close either surface and both disappear so they remain in sync.
 - **Command palette**: `Ctrl/Cmd+K` opens a searchable list of every action. The palette now tokenizes your query, so you can still find “search notes” by typing “find notes” or say “show frontmatter” even though the labels read “Display…”. It also remembers the last command you ran and surfaces it to the top when the query is empty, letting you reopen it and press Enter to repeat the previous action (toggling commands respect this history, too).
 
-## Release 0.2.6
+## Release 0.2.7
 
-- Frontmatter editing moved to a dedicated CodeMirror YAML surface with palette-aware token colours and proper focus handling; toggling it also opens/closes the structured frontmatter panel so the views never drift apart.
-- The frontmatter indicator doubles as a discrete “frontmatter available” badge—click it, use `Ctrl/Cmd+Alt+F`, or run the palette command (which also remembers the last action you executed) to show/hide both editor and panel.
-- Header controls slimmed down: typography and palette selects now collapse to content width, reducing the top bar height and reclaiming horizontal space across smaller screens.
-- File vaults now label themselves correctly in the sidebar and expose a compact sort toggle (Note name vs. Modified date) so you can jump between alphabetical and chronological views, matching the workflow you need.
-- Added a ready-to-use vault under `samples/vault-sample/` with ten markdown files that cover agendas, journals, YAML metadata, and regressions, making it easier to demo or test vault mode locally.
 
 ## Shortcut reference
 
