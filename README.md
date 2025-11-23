@@ -7,6 +7,7 @@ jazzbb is an offline-first markdown editor/hub that runs entirely in the browser
 - **Vault management**: open a local folder, read/write `.md` files in place, and manage notes (create, rename, delete) from the sidebar, now with a note name/modified date sort toggle in file vaults.
 - **Single-file mode**: work from a standalone scratch note, then use the header save controls to either store it in the browser vault or write it to disk—with autosave staying off for manual control.
 - **Live editor**: Single-pane TipTap / ProseMirror surface that renders Markdown inline as you type. Debounced worker parsing keeps typing responsive while the editor shows formatted content.
+- **Markdown tables**: GitHub-style tables (headers, column scaffolding, inline formatting) now render directly in the editor. Drop in `samples/markdown-table-examples.md` for three ready-made scenarios.
 - **External change detection**: Single-file sessions poll the opened handle every two seconds and reload changes written by other editors (Chromium browsers only); unsaved edits trigger a warning instead of overwriting.
 - **Typography presets**: Five open-license presets (Editorial Classic, Humanist Tech, Swiss Modern + Display, Bookish Oldstyle, Inclusive Readability) accessible from the header. Presets now restyle only the editor and preview content—UI typography remains unchanged—while still tuning body/headline/code families, numeral styles, and spacing inside the document.
 - **Theme toggle**: Quick sun/moon button switches between light and night modes without refreshing.
@@ -57,6 +58,8 @@ Visit the dev server (default `http://localhost:5173`), then press **Open vault*
 ### Sample vault
 
 Point the “Open vault” picker at `samples/vault-sample/` to load ten ready-made markdown files that exercise frontmatter, outlines, tasks, and general editing flows. It’s handy for demos, automated tests, or verifying release builds without touching your personal notes.
+
+If you just want ready-made table snippets, `samples/markdown-table-examples.md` includes three progressively complex layouts you can paste into scratch mode or any vault note.
 
 ### Running Tests & Linting
 

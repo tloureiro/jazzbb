@@ -11,6 +11,10 @@ import TaskItem from '@tiptap/extension-task-item';
 import { Markdown } from 'tiptap-markdown';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { Extension } from '@tiptap/core';
+import { Table } from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableHeader from '@tiptap/extension-table-header';
+import TableCell from '@tiptap/extension-table-cell';
 import { lowlight } from '../lib/syntax';
 import { normalizeSerializedMarkdown, renderMarkdown } from '../lib/markdown';
 import { editorStore } from '../state/editor';
@@ -193,6 +197,13 @@ export function CodeEditor(props: CodeEditorProps) {
         Link.configure({ openOnClick: false, autolink: true, HTMLAttributes: { rel: 'noopener noreferrer' } }),
         TaskList.configure({ HTMLAttributes: { class: 'tiptap-task-list' } }),
         TaskItem.configure({ nested: true, HTMLAttributes: { class: 'tiptap-task-item' } }),
+        Table.configure({
+          HTMLAttributes: { class: 'tiptap-table' },
+          resizable: false,
+        }),
+        TableRow,
+        TableHeader,
+        TableCell,
         MarkdownPasteHandler,
         Markdown.configure({
           html: true,

@@ -1818,12 +1818,15 @@ button, select, input, textarea {
   color: var(--color-text-muted);
 }
 
+.tiptap-editor table,
 .markdown-body table {
   width: 100%;
   border-collapse: collapse;
   margin: 1rem 0;
 }
 
+.tiptap-editor table th,
+.tiptap-editor table td,
 .markdown-body th,
 .markdown-body td {
   border: 1px solid var(--color-border);
