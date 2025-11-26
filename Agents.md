@@ -22,6 +22,7 @@
 
 ## Development Guidelines
 - Single-file mode uses `workspaceStore` (`scratch`/`single`/`vault`) to route save behavior. `openSingleFile()` populates `workspaceStore.singleFile`; the first manual save in scratch invokes `showSaveFilePicker`. Use `closeSingleFile()` to drop back to scratch mode when the user taps Close file.
+- The desktop wrapper can inject files directly (see `src/platform/external-file.ts`). We listen for the `jazzbb:open-file` event, create a mock `FileSystemFileHandle` that proxies to Electron via `window.jazzbbWrapper`, and ignore the hook when Jazzbb runs in a normal browser.
 - The header now exposes `Save to browser` (scratch-only) to migrate the active draft into the IndexedDB vault and `Save to file` to export the active note without leaving browser vault mode; both remain accessible once the UI renders.
 - Typography presets live in `src/styles/typography.css` and are selected via `data-preset` on `<html>` (controlled by `setTypographyPreset`). Header select updates the store; add new presets by extending the CSS + signal.
 - When adding features, update the README and this file with any new commands, workflows, or shortcuts.

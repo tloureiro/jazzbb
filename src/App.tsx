@@ -26,6 +26,7 @@ import {
 import { grammarChecksStore } from './state/grammarChecks';
 import { getShortcutLabel, subscribeToShortcutChanges } from './lib/shortcuts';
 import { DEFAULT_EDITOR_FONT_SCALE, setEditorFontScale } from './state/ui';
+import { registerExternalFileBridge } from './platform/external-file';
 
 const App: Component = () => {
   const vaultActive = () => isVaultMode();
@@ -161,6 +162,10 @@ const App: Component = () => {
   };
 
   onMount(() => {
+    const teardownExternalBridge = registerExternalFileBridge();
+    if (teardownExternalBridge) {
+      onCleanup(teardownExternalBridge);
+    }
     setEditorFontScale(DEFAULT_EDITOR_FONT_SCALE);
     grammarChecksStore.initialize();
     updateHeaderHeight();
