@@ -21,7 +21,7 @@ jazzbb is an offline-first markdown editor/hub that runs entirely in the browser
 - **Frontmatter tools**: YAML frontmatter stays hidden until you toggle it; the `FM` badge (or `Ctrl/Cmd+Alt+F` / palette command) now opens a syntax-highlighted CodeMirror block above the editor and simultaneously reveals the read-only metadata panel in the sidebar. Close either surface and both disappear so they remain in sync.
 - **Command palette**: `Ctrl/Cmd+K` opens a searchable list of every action. The palette now tokenizes your query, so you can still find “search notes” by typing “find notes” or say “show frontmatter” even though the labels read “Display…”. It also remembers the last command you ran and surfaces it to the top when the query is empty, letting you reopen it and press Enter to repeat the previous action (toggling commands respect this history, too).
 
-## Release 0.4.0
+## Release 0.5.0
 
 
 ## Shortcut reference
