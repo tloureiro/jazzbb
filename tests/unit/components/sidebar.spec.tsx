@@ -87,6 +87,36 @@ describe('Sidebar', () => {
 
     confirmSpy.mockRestore();
   });
+
+  it('renders nested folders collapsed by default', () => {
+    const now = Date.now();
+    vaultStore.setNotes([{ path: 'projects/atlas/spec.md', title: 'Spec', lastModified: now }]);
+
+    render(() => <Sidebar />);
+
+    expect(screen.getByRole('button', { name: 'Toggle folder projects' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Toggle folder atlas' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle folder projects' }));
+    expect(screen.getByRole('button', { name: 'Toggle folder atlas' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Spec' })).not.toBeInTheDocument();
+  });
+
+  it('expands folders when toggled', () => {
+    const now = Date.now();
+    vaultStore.setNotes([{ path: 'projects/atlas/spec.md', title: 'Spec', lastModified: now }]);
+
+    render(() => <Sidebar />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle folder projects' }));
+    const atlasFolder = screen.getByRole('button', { name: 'Toggle folder atlas' });
+    fireEvent.click(atlasFolder);
+
+    expect(screen.getByRole('button', { name: 'Spec' })).toBeInTheDocument();
+
+    fireEvent.click(atlasFolder);
+    expect(screen.queryByRole('button', { name: 'Spec' })).not.toBeInTheDocument();
+  });
 });
 
 describe('Sidebar inline rename', () => {

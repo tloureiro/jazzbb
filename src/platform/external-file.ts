@@ -3,7 +3,6 @@ import { parseNote } from './parser-service';
 import { editorStore } from '../state/editor';
 import { workspaceStore } from '../state/workspace';
 import { vaultStore } from '../state/vault';
-import { loadVaultContents } from './vault-loader';
 
 type ExternalFilePayload = {
   path: string;

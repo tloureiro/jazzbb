@@ -1042,51 +1042,51 @@ button, select, input, textarea {
 
 .sidebar-title {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.sidebar-badge {
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
+.sidebar-label {
+  margin: 0;
+  font-size: 0.75rem;
   text-transform: uppercase;
+  letter-spacing: 0.1em;
   color: var(--color-text-muted);
-  padding: 0.15rem 0.45rem;
-  border-radius: 999px;
-  border: 1px solid var(--color-border);
 }
 
-.sidebar-badge[data-variant='browser'] {
-  color: var(--color-accent);
-  border-color: color-mix(in srgb, var(--color-accent) 60%, transparent);
-}
-
-.sidebar-sort {
-  display: inline-flex;
+.sidebar-heading {
+  display: flex;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
-.sidebar-sort-button {
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  background: transparent;
+.sidebar-sort-select {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
-  font-size: 0.7rem;
+}
+
+.sidebar-sort-select span {
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 0.15rem 0.5rem;
-  cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
-.sidebar-sort-button[data-active='true'] {
-  color: var(--color-accent);
-  border-color: color-mix(in srgb, var(--color-accent) 55%, transparent);
-  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+.sidebar-sort-select select {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  appearance: none;
+  min-width: 7rem;
 }
 
-.sidebar-sort-button:focus-visible {
+.sidebar-sort-select select:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
@@ -1280,7 +1280,9 @@ button, select, input, textarea {
   }
 }
 
-.note-list {
+.note-list,
+.note-tree,
+.note-children {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -1290,6 +1292,62 @@ button, select, input, textarea {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+.note-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.note-folder {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.folder-button {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-align: left;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  width: 100%;
+}
+
+.folder-caret {
+  width: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.folder-caret::before {
+  content: '▾';
+  font-size: 0.65rem;
+}
+
+.folder-caret[data-collapsed='true']::before {
+  transform: rotate(-90deg);
+}
+
+.folder-label {
+  flex: 1;
+}
+
+.note-children {
+  margin-left: 0;
+}
+
+.note-list-item[data-depth] .note-button,
+.note-list-item[data-depth] .note-rename-input,
+.note-list-item[data-depth] .folder-button {
+  width: 100%;
 }
 
 .note-button {
