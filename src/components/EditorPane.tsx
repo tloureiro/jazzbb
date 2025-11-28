@@ -19,6 +19,7 @@ import { SCRATCH_TITLE } from '../state/editor';
 import { closeActiveDocument } from '../lib/documents';
 import { getShortcutLabel, isShortcutEvent, subscribeToShortcutChanges } from '../lib/shortcuts';
 import { deleteCurrentLine } from '../lib/editorShortcuts';
+import { PLAIN_PASTE_EVENT, type PlainPasteContext, type PlainPasteRequestDetail } from '../lib/events';
 import type { CollapseCommandSet } from '../extensions/collapsibleHeading';
 
 const EditorPane: Component = () => {
@@ -30,6 +31,7 @@ const EditorPane: Component = () => {
   let containerRef: HTMLDivElement | undefined;
   let findModeActive = false;
   let plainEditorRef: HTMLTextAreaElement | undefined;
+  let plainPasteListener: ((event: Event) => void) | undefined;
   const [shortcutsVersion, setShortcutsVersion] = createSignal(0);
   onCleanup(
     subscribeToShortcutChanges(() => {
@@ -215,6 +217,190 @@ const EditorPane: Component = () => {
     return result;
   };
 
+  const resolvePlainPasteContext = (
+    target?: EventTarget | null,
+    fallback?: PlainPasteContext,
+  ): PlainPasteContext | null => {
+    if (typeof document === 'undefined') {
+      return fallback ?? null;
+    }
+    const toElement = (candidate: EventTarget | null | undefined): Element | null => {
+      if (!candidate) return null;
+      if (candidate instanceof Element) return candidate;
+      if (candidate instanceof Node && candidate.parentElement) {
+        return candidate.parentElement;
+      }
+      return null;
+    };
+
+    const editor = editorStore.getEditor();
+    const editorElement = editor?.view?.dom ?? null;
+    const probes = [toElement(target), toElement(document.activeElement)];
+
+    for (const candidate of probes) {
+      if (!candidate) continue;
+      if (plainEditorRef && candidate === plainEditorRef) {
+        return 'plain';
+      }
+      if (plainEditorRef && candidate.closest('[data-test="plain-markdown-editor"]')) {
+        return 'plain';
+      }
+      if (editorElement && (candidate === editorElement || editorElement.contains(candidate))) {
+        return 'rich';
+      }
+    }
+
+    if (fallback) {
+      return fallback;
+    }
+    if (plainMode() && plainEditorRef) {
+      return 'plain';
+    }
+    if (editorElement) {
+      return 'rich';
+    }
+    return null;
+  };
+
+  const insertPlainTextIntoTextarea = (text: string): boolean => {
+    if (!plainEditorRef) {
+      return false;
+    }
+    const target = plainEditorRef;
+    target.focus();
+    const value = target.value ?? '';
+    const selectionStart = target.selectionStart ?? value.length;
+    const selectionEnd = target.selectionEnd ?? selectionStart;
+    const next = `${value.slice(0, selectionStart)}${text}${value.slice(selectionEnd)}`;
+    const cursor = selectionStart + text.length;
+    target.value = next;
+    target.setSelectionRange(cursor, cursor);
+    handleChange(next);
+    return true;
+  };
+
+  const PLAIN_TEXT_BLOCK_ELEMENTS = new Set([
+    'P',
+    'DIV',
+    'LI',
+    'UL',
+    'OL',
+    'BLOCKQUOTE',
+    'H1',
+    'H2',
+    'H3',
+    'H4',
+    'H5',
+    'H6',
+    'PRE',
+    'TABLE',
+    'THEAD',
+    'TBODY',
+    'TFOOT',
+    'TR',
+    'TD',
+    'TH',
+  ]);
+
+  const normalizePlainText = (markdown: string): string => {
+    if (!markdown.trim()) {
+      return markdown;
+    }
+    if (typeof document === 'undefined') {
+      return markdown;
+    }
+    try {
+      const html = renderMarkdown(markdown);
+      const template = document.createElement('template');
+      template.innerHTML = html;
+      let result = '';
+
+      const appendNewline = () => {
+        if (!result) {
+          return;
+        }
+        if (!result.endsWith('\n')) {
+          result += '\n';
+        }
+      };
+
+      const visit = (node: Node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const value = node.textContent ?? '';
+          if (value) {
+            result += value;
+          }
+          return;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+          return;
+        }
+        const element = node as Element;
+        if (element.tagName === 'BR') {
+          result += '\n';
+          return;
+        }
+        const isBlock = PLAIN_TEXT_BLOCK_ELEMENTS.has(element.tagName);
+        if (isBlock) {
+          appendNewline();
+        }
+        element.childNodes.forEach((child) => visit(child));
+        if (isBlock) {
+          appendNewline();
+        }
+      };
+
+      template.content.childNodes.forEach((child) => visit(child));
+      return result
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    } catch (error) {
+      console.error('Failed to normalize plain paste text', error);
+      return markdown;
+    }
+  };
+
+  const insertPlainTextIntoEditor = (text: string): boolean => {
+    const editor = editorStore.getEditor();
+    if (!editor?.view) {
+      return false;
+    }
+    editor.commands.focus();
+    const tr = editor.state.tr.insertText(text);
+    editor.view.dispatch(tr);
+    editor.commands.focus();
+    return true;
+  };
+
+  const pastePlainText = async (context: PlainPasteContext): Promise<boolean> => {
+    if (typeof navigator === 'undefined' || !navigator.clipboard?.readText) {
+      showToast('Plain paste needs clipboard permissions.', 'error');
+      return false;
+    }
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      const normalized = normalizePlainText(clipboardText.replace(/\r\n?/g, '\n'));
+      if (context === 'plain') {
+        return insertPlainTextIntoTextarea(normalized);
+      }
+      return insertPlainTextIntoEditor(normalized);
+    } catch (error) {
+      console.error('Failed to read clipboard contents for plain paste', error);
+      showToast('Could not read clipboard contents.', 'error');
+      return false;
+    }
+  };
+
+  const handlePlainPasteRequest = async (requestedContext?: PlainPasteContext) => {
+    const context = resolvePlainPasteContext(undefined, requestedContext);
+    if (!context) {
+      showToast('Focus the editor before pasting without formatting.', 'info');
+      return;
+    }
+    await pastePlainText(context);
+  };
+
   const handleKeydown = async (event: KeyboardEvent) => {
     if (isShortcutEvent(event, 'close-document')) {
       event.preventDefault();
@@ -262,6 +448,16 @@ const EditorPane: Component = () => {
       if (handled) {
         event.preventDefault();
       }
+      return;
+    }
+
+    if (isShortcutEvent(event, 'paste-plain-text')) {
+      const context = resolvePlainPasteContext(event.target);
+      if (!context) {
+        return;
+      }
+      event.preventDefault();
+      await pastePlainText(context);
       return;
     }
 
@@ -384,6 +580,11 @@ const EditorPane: Component = () => {
       runtime.__togglePlainMode = () => {
         togglePlainMarkdownMode();
       };
+      plainPasteListener = (event) => {
+        const detail = (event as CustomEvent<PlainPasteRequestDetail | undefined>).detail;
+        void handlePlainPasteRequest(detail?.context);
+      };
+      window.addEventListener(PLAIN_PASTE_EVENT, plainPasteListener);
     }
   });
 
@@ -392,10 +593,9 @@ const EditorPane: Component = () => {
     containerRef?.removeEventListener('pointerdown', handleContainerMouseDownCapture, { capture: true });
     if (typeof window !== 'undefined') {
       const runtime = window as typeof window & { __requestAutoExpand?: () => void };
-    if (runtime.__requestAutoExpand) {
-      delete runtime.__requestAutoExpand;
-    }
-    if (typeof window !== 'undefined') {
+      if (runtime.__requestAutoExpand) {
+        delete runtime.__requestAutoExpand;
+      }
       const toggleRuntime = window as typeof window & {
         __toggleFrontmatterVisibility?: () => boolean;
         __togglePlainMode?: () => void;
@@ -406,7 +606,10 @@ const EditorPane: Component = () => {
       if (toggleRuntime.__togglePlainMode) {
         delete toggleRuntime.__togglePlainMode;
       }
-    }
+      if (plainPasteListener) {
+        window.removeEventListener(PLAIN_PASTE_EVENT, plainPasteListener);
+        plainPasteListener = undefined;
+      }
     }
     if (parseTimer !== undefined) {
       window.clearTimeout(parseTimer);

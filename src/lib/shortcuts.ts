@@ -31,6 +31,7 @@ export type ShortcutId =
   | 'toggle-heading-collapse'
   | 'toggle-frontmatter-editor'
   | 'toggle-plain-markdown'
+  | 'paste-plain-text'
   | 'delete-line'
   | 'escape'
   | 'search-notes'
@@ -198,6 +199,13 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     description: 'Toggle plain Markdown view',
     mac: { key: 'm', meta: true, alt: true },
     windows: { key: 'm', ctrl: true, alt: true },
+    group: 'general',
+  },
+  {
+    id: 'paste-plain-text',
+    description: 'Paste text without formatting',
+    mac: { key: 'v', meta: true, alt: true, shift: true },
+    windows: { key: 'v', ctrl: true, shift: true },
     group: 'general',
   },
   {

@@ -144,12 +144,6 @@ function rebuildState(doc: ProseMirrorNode, editor: Editor): CollapsePluginState
 }
 
 export const CollapsibleHeading = Heading.extend({
-  addOptions() {
-    return {
-      ...this.parent?.(),
-    };
-  },
-
   addAttributes() {
     return {
       ...this.parent?.(),

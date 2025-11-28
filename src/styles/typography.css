@@ -37,11 +37,12 @@
     --editor-font-variant-code: lining-nums tabular-nums;
     --editor-link-underline-thickness: 0.12em;
     --editor-link-underline-offset: 0.18em;
-    --editor-font-size-h1: clamp(2.2rem, 1.8rem + 1.8vw, 3.4rem);
-    --editor-font-size-h2: clamp(1.8rem, 1.5rem + 1.2vw, 2.6rem);
-    --editor-font-size-h3: clamp(1.5rem, 1.3rem + 0.8vw, 2rem);
-    --editor-font-size-h4: clamp(1.25rem, 1.1rem + 0.5vw, 1.6rem);
-    --editor-font-size-small: clamp(0.875rem, 0.85rem + 0.2vw, 0.95rem);
+    --editor-font-size-h1: clamp(2.4rem, 2rem + 1.2vw, 3.05rem);
+    --editor-font-size-h2: clamp(1.9rem, 1.6rem + 0.8vw, 2.44rem);
+    --editor-font-size-h3: clamp(1.5rem, 1.35rem + 0.45vw, 1.95rem);
+    --editor-font-size-h4: clamp(1.25rem, 1.15rem + 0.25vw, 1.56rem);
+    --editor-font-size-h5: clamp(1.1rem, 1.05rem + 0.15vw, 1.25rem);
+    --editor-font-size-small: clamp(0.95rem, 0.9rem + 0.2vw, 1.05rem);
     --editor-font-measure: 60ch;
   }
 
@@ -117,8 +118,12 @@
   }
 
   .tiptap-editor h5,
+  .markdown-body h5 {
+    font-size: calc(var(--editor-font-scale, 1) * var(--editor-font-size-h5));
+    font-weight: calc(var(--editor-font-weight-heading) - 100);
+  }
+
   .tiptap-editor h6,
-  .markdown-body h5,
   .markdown-body h6 {
     font-size: calc(var(--editor-font-scale, 1) * var(--editor-font-size-small));
     font-weight: calc(var(--editor-font-weight-heading) - 100);

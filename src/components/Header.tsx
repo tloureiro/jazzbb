@@ -58,6 +58,7 @@ import {
   type StorageEstimate,
 } from '../platform/browser-vault-storage';
 import { getShortcutLabel, isShortcutEvent, subscribeToShortcutChanges } from '../lib/shortcuts';
+import { dispatchPlainPasteEvent, type PlainPasteContext } from '../lib/events';
 import { closeActiveDocument } from '../lib/documents';
 
 const Header: Component = () => {
@@ -498,6 +499,23 @@ const Header: Component = () => {
         keywords: 'markdown plain source editor display show',
         run: () => {
           togglePlainMarkdownMode();
+        },
+      },
+      {
+        id: 'paste-plain-text',
+        label: 'Paste as plain text',
+        subtitle: 'Insert clipboard text without formatting',
+        shortcut: getShortcutLabel('paste-plain-text'),
+        keywords: 'paste plain text clipboard unformatted',
+        run: () => {
+          const context: PlainPasteContext = plainMarkdown ? 'plain' : 'rich';
+          const dispatched = dispatchPlainPasteEvent({
+            context,
+            source: 'command-palette',
+          });
+          if (!dispatched) {
+            showToast('Plain paste is only available in the browser.', 'error');
+          }
         },
       },
       {
