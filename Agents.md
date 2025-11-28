@@ -3,6 +3,11 @@
 ## Session Rituals
 - Run `npm run lint`, `npm run test -- --run`, and `npm run test:e2e` whenever code changes land. This is a hard requirement—treat it as part of “done” for every pull request. Vitest and Playwright bind to localhost; if a sandbox blocks them, call it out explicitly and rerun as soon as permissions allow.
 
+## Release Workflow
+- All releases go through `./version-deploy.sh`. The user runs it; you only supply the exact answers they must type.
+- Prepare five prompts in advance: stage confirmation (`y` to stage everything), commit message (e.g. `chore: release 0.5.1`), next semantic tag, one-line tag description, and Markdown bullet release notes.
+- Hand these inputs to the user before they run the script so the deploy flow is deterministic. The script pushes the branch/tag and deploys via Cloudflare Pages automatically.
+
 ## Project Snapshot
 - **Stack**: SolidJS + Vite + CodeMirror 6; Markdown parsing with `markdown-it` in a Web Worker; DOMPurify for sanitisation; FlexSearch worker for indexing.
 - **State**: `editorStore` manages active path, draft text, preview HTML, and link metadata. `vaultStore` tracks note list, file handles, cached parses, and selection.
