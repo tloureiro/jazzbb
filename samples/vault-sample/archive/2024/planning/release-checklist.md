@@ -13,7 +13,7 @@
 
 ## Deployment
 1. `npm run build`
-2. `./version-deploy.sh`
+2. `./version-and-deploy.sh`
 3. Confirm Cloudflare Pages deploy + smoke test the preview vault
 
 ## Notes

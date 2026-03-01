@@ -2,10 +2,12 @@ import { render } from '@solidjs/testing-library';
 import { describe, expect, it, beforeEach } from 'vitest';
 import type { Editor as TiptapEditor } from '@tiptap/core';
 import CodeEditor from '../../../src/components/CodeEditor';
+import { editorStore } from '../../../src/state/editor';
 
 function insertMarkdown(editor: TiptapEditor, markdown: string): void {
   const normalized = markdown.replace(/\r\n?/g, '\n');
   const rendered = editor.storage.markdown?.parser?.parse(normalized, { inline: false }) ?? normalized;
+  editorStore.signalUserEditIntent('test-markdown-insert');
   editor.chain().focus().deleteSelection().insertContent(rendered).run();
 }
 
@@ -25,6 +27,7 @@ describe('CodeEditor markdown paste', () => {
     expect(editor).toBeDefined();
     if (!editor) throw new Error('Editor not initialised');
 
+    await Promise.resolve();
     insertMarkdown(editor, '# Title\n\n- First\n- Second');
 
     await Promise.resolve();
@@ -48,6 +51,7 @@ describe('CodeEditor markdown paste', () => {
     expect(editor).toBeDefined();
     if (!editor) throw new Error('Editor not initialised');
 
+    await Promise.resolve();
     insertMarkdown(editor, '# Title\n\n- First\n- Second');
 
     await Promise.resolve();

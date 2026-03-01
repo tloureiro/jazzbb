@@ -10,6 +10,8 @@ type CollapseCommands = {
   expandHeadingAt: (pos?: number) => boolean;
 };
 
+type UserEditIntentListener = (source: string) => void;
+
 const DEFAULT_SCRATCH_TITLE = 'Untitled';
 export const SCRATCH_TITLE = DEFAULT_SCRATCH_TITLE;
 
@@ -28,6 +30,17 @@ const [frontmatterSection, setFrontmatterSection] = createSignal<FrontmatterSect
 const [frontmatterMetadataSignal, setFrontmatterMetadataSignal] = createSignal<FrontmatterMetadata | undefined>(undefined);
 let pendingFocus: 'start' | 'end' | undefined;
 let autoExpandNextSelection = false;
+const userEditIntentListeners = new Set<UserEditIntentListener>();
+
+function notifyUserEditIntent(source: string): void {
+  userEditIntentListeners.forEach((listener) => {
+    try {
+      listener(source);
+    } catch (error) {
+      console.warn('User edit intent listener threw', error);
+    }
+  });
+}
 
 function normalizeDisplayName(path: string | undefined, fallback: string): string {
   if (path) {
@@ -200,6 +213,15 @@ export const editorStore = {
     commands.ensureHeadingVisible();
     expandCollapsedHeadingAtSelection(editor);
     autoExpandNextSelection = false;
+  },
+  subscribeToUserEditIntent(listener: UserEditIntentListener) {
+    userEditIntentListeners.add(listener);
+    return () => {
+      userEditIntentListeners.delete(listener);
+    };
+  },
+  signalUserEditIntent(source: string = 'unknown') {
+    notifyUserEditIntent(source);
   },
   scrollToHeading(id: string, options?: { focusEditor?: boolean }) {
     const editor = editorInstance();

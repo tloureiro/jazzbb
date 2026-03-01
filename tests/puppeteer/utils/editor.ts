@@ -30,6 +30,7 @@ type RuntimeWindow = typeof window & {
       toggleTaskList?: () => void;
     };
     view: {
+      dom: HTMLElement;
       state: {
         selection: { $from: ResolvedPos; $to: ResolvedPos };
         tr: Transaction;
@@ -51,8 +52,9 @@ export async function resetEditor(page: Page): Promise<void> {
     const runtime = window as RuntimeWindow;
     const editor = runtime.__tiptapEditor;
     if (!editor) return;
+    editor.view.dom.dispatchEvent(new Event('beforeinput', { bubbles: true, cancelable: true }));
     editor.commands.clearContent(true);
-    editor.commands.setContent('', { emitUpdate: false, parseOptions: { preserveWhitespace: 'full' } });
+    editor.commands.setContent('<p></p>', { emitUpdate: false, parseOptions: { preserveWhitespace: 'full' } });
     editor.chain().focus('start').run();
     runtime.__jazzbbLastPasteMode = undefined;
   });
@@ -76,6 +78,7 @@ export async function pasteAsPlainText(page: Page, text: string): Promise<void> 
     }
 
     editor.chain().focus('end').run();
+    editor.view.dom.dispatchEvent(new Event('beforeinput', { bubbles: true, cancelable: true }));
     const view = editor.view;
     const { state } = view;
     const slice = view.someProp('clipboardTextParser', (parser) =>
@@ -90,7 +93,14 @@ export async function pasteAsPlainText(page: Page, text: string): Promise<void> 
       throw new Error('Clipboard parser returned no slice');
     }
 
-    const tr = state.tr.replaceSelection(slice).scrollIntoView().setMeta('paste', true).setMeta('uiEvent', 'paste');
+    let tr = state.tr;
+    try {
+      tr = tr.replaceSelection(slice);
+    } catch {
+      const fallbackText = slice.content.textBetween(0, slice.content.size, ' ', ' ').replace(/\s+/g, ' ').trim();
+      tr = state.tr.insertText(fallbackText || payload.text);
+    }
+    tr = tr.scrollIntoView().setMeta('paste', true).setMeta('uiEvent', 'paste');
     view.dispatch(tr);
   }, { text });
 

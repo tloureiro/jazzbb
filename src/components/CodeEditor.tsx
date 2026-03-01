@@ -39,6 +39,32 @@ type MarkdownStorage = {
   };
 };
 
+type SyncDebugEvent = {
+  type:
+    | 'hydration-start'
+    | 'hydration-end'
+    | 'remote-apply-start'
+    | 'remote-apply-end'
+    | 'user-intent'
+    | 'update-blocked'
+    | 'update-accepted';
+  source?: string;
+  flags?: {
+    isHydratingInitialContent: boolean;
+    isApplyingRemoteUpdate: boolean;
+    hasUserEditIntent: boolean;
+  };
+};
+
+function emitSyncDebug(event: SyncDebugEvent): void {
+  if (typeof window === 'undefined') return;
+  const runtime = window as typeof window & { __jazzbbSyncDebugEvents?: SyncDebugEvent[] };
+  if (!Array.isArray(runtime.__jazzbbSyncDebugEvents)) {
+    return;
+  }
+  runtime.__jazzbbSyncDebugEvents.push(event);
+}
+
 function readMarkdown(instance: Editor): string {
   const storage = instance.storage as MarkdownStorage;
   const value = storage.markdown?.getMarkdown();
@@ -177,8 +203,42 @@ const MarkdownPasteHandler = Extension.create({
 export function CodeEditor(props: CodeEditorProps) {
   let containerRef!: HTMLDivElement;
   let editor: Editor | undefined;
+  let isHydratingInitialContent = true;
+  let isApplyingRemoteUpdate = false;
+  let hasUserEditIntent = false;
+  let remoteApplyDepth = 0;
+
+  const snapshotFlags = () => ({
+    isHydratingInitialContent,
+    isApplyingRemoteUpdate,
+    hasUserEditIntent,
+  });
+
+  const markUserEditIntent = (source: string) => {
+    hasUserEditIntent = true;
+    emitSyncDebug({ type: 'user-intent', source, flags: snapshotFlags() });
+  };
+
+  const applyRemoteContent = (source: string, fn: () => void) => {
+    remoteApplyDepth += 1;
+    isApplyingRemoteUpdate = true;
+    hasUserEditIntent = false;
+    emitSyncDebug({ type: 'remote-apply-start', source, flags: snapshotFlags() });
+    try {
+      fn();
+    } finally {
+      queueMicrotask(() => {
+        remoteApplyDepth = Math.max(0, remoteApplyDepth - 1);
+        isApplyingRemoteUpdate = remoteApplyDepth > 0;
+        emitSyncDebug({ type: 'remote-apply-end', source, flags: snapshotFlags() });
+      });
+    }
+  };
 
   onMount(() => {
+    const normalizedInitialContent = normalizeSerializedMarkdown(props.value());
+    emitSyncDebug({ type: 'hydration-start', flags: snapshotFlags() });
+
     editor = new Editor({
       element: containerRef,
       extensions: [
@@ -217,7 +277,10 @@ export function CodeEditor(props: CodeEditorProps) {
           name: 'deleteLineShortcut',
           addKeyboardShortcuts() {
             return {
-              'Mod-d': () => deleteCurrentLine(this.editor),
+              'Mod-d': () => {
+                editorStore.signalUserEditIntent('delete-line-keyboard');
+                return deleteCurrentLine(this.editor);
+              },
             };
           },
         }),
@@ -230,12 +293,17 @@ export function CodeEditor(props: CodeEditorProps) {
           'data-grammarly': 'false',
         },
       },
-      content: normalizeSerializedMarkdown(props.value()),
+      content: '',
       onUpdate: ({ editor: instance }) => {
         const currentRaw = readMarkdown(instance);
         const normalized = normalizeSerializedMarkdown(currentRaw);
-        props.onChange(normalized);
         editorStore.updateSelectionHeading();
+        if (isHydratingInitialContent || isApplyingRemoteUpdate || !hasUserEditIntent) {
+          emitSyncDebug({ type: 'update-blocked', flags: snapshotFlags() });
+          return;
+        }
+        emitSyncDebug({ type: 'update-accepted', flags: snapshotFlags() });
+        props.onChange(normalized);
       },
     });
 
@@ -247,7 +315,7 @@ export function CodeEditor(props: CodeEditorProps) {
     });
 
     queueMicrotask(() => {
-      editor?.commands.focus('end');
+      editor?.commands.focus('end', { scrollIntoView: false });
       editorStore.updateSelectionHeading();
     });
 
@@ -268,17 +336,54 @@ export function CodeEditor(props: CodeEditorProps) {
         clipboard.setData('text/plain', normalized);
         clipboard.setData('text/markdown', normalized);
       };
+      const handleBeforeInputCapture = () => markUserEditIntent('beforeinput');
+      const handleCompositionStartCapture = () => markUserEditIntent('compositionstart');
+      const handlePasteCapture = () => markUserEditIntent('paste');
+      const handleDropCapture = () => markUserEditIntent('drop');
+      const handleClickCapture = (event: MouseEvent) => {
+        const target = event.target;
+        if (target instanceof HTMLInputElement && target.type === 'checkbox') {
+          markUserEditIntent('checkbox-click');
+        }
+      };
 
       instance.view.dom.addEventListener('copy', handleCopy);
+      instance.view.dom.addEventListener('beforeinput', handleBeforeInputCapture, true);
+      instance.view.dom.addEventListener('compositionstart', handleCompositionStartCapture, true);
+      instance.view.dom.addEventListener('paste', handlePasteCapture, true);
+      instance.view.dom.addEventListener('drop', handleDropCapture, true);
+      instance.view.dom.addEventListener('click', handleClickCapture, true);
       if (typeof window !== 'undefined') {
         (window as typeof window & { __tiptapEditor?: Editor }).__tiptapEditor = instance;
       }
       editorStore.registerEditor(instance);
       const handleSelectionUpdate = () => editorStore.updateSelectionHeading();
+      const unsubscribeUserEditIntent = editorStore.subscribeToUserEditIntent((source) => {
+        markUserEditIntent(source);
+      });
       instance.on('selectionUpdate', handleSelectionUpdate);
       onCleanup(() => {
         instance.off('selectionUpdate', handleSelectionUpdate);
         instance.view.dom.removeEventListener('copy', handleCopy);
+        instance.view.dom.removeEventListener('beforeinput', handleBeforeInputCapture, true);
+        instance.view.dom.removeEventListener('compositionstart', handleCompositionStartCapture, true);
+        instance.view.dom.removeEventListener('paste', handlePasteCapture, true);
+        instance.view.dom.removeEventListener('drop', handleDropCapture, true);
+        instance.view.dom.removeEventListener('click', handleClickCapture, true);
+        unsubscribeUserEditIntent();
+      });
+
+      applyRemoteContent('initial-content', () => {
+        instance.commands.setContent(normalizedInitialContent, {
+          emitUpdate: false,
+          parseOptions: { preserveWhitespace: 'full' },
+        });
+        editorStore.updateSelectionHeading();
+      });
+
+      queueMicrotask(() => {
+        isHydratingInitialContent = false;
+        emitSyncDebug({ type: 'hydration-end', flags: snapshotFlags() });
       });
     }
   });
@@ -289,11 +394,13 @@ export function CodeEditor(props: CodeEditorProps) {
     const currentRaw = readMarkdown(editor);
     const normalizedCurrent = normalizeSerializedMarkdown(currentRaw);
     if (normalizedIncoming !== normalizedCurrent) {
-      editor.commands.setContent(normalizedIncoming, {
-        emitUpdate: false,
-        parseOptions: { preserveWhitespace: 'full' },
+      applyRemoteContent('incoming-content', () => {
+        editor?.commands.setContent(normalizedIncoming, {
+          emitUpdate: false,
+          parseOptions: { preserveWhitespace: 'full' },
+        });
+        editorStore.updateSelectionHeading();
       });
-      editorStore.updateSelectionHeading();
     }
   });
 

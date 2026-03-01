@@ -6,6 +6,7 @@ import type { EditorState, Transaction } from '@tiptap/pm/state';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { getShortcutLabel } from '../lib/shortcuts';
 import { grammarChecksStore } from '../state/grammarChecks';
+import { editorStore } from '../state/editor';
 
 type CollapsedRange = { from: number; to: number; headingPos: number };
 
@@ -101,6 +102,7 @@ function buildCollapseDecorations(doc: ProseMirrorNode, editor: Editor) {
     toggle.addEventListener('click', (event) => {
       event.preventDefault();
       const commands = editor.commands as typeof editor.commands & CollapseCommandSet;
+      editorStore.signalUserEditIntent('toggle-heading-collapse-button');
       commands.toggleHeadingCollapse({ pos });
       editor.commands.focus();
     });
@@ -254,6 +256,7 @@ export const CollapsibleHeading = Heading.extend({
       ...this.parent?.(),
       'Mod-Alt-k': () => {
         const commands = this.editor.commands as typeof this.editor.commands & CollapseCommandSet;
+        editorStore.signalUserEditIntent('toggle-heading-collapse-keyboard');
         return commands.toggleHeadingCollapse();
       },
     };

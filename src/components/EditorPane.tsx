@@ -142,6 +142,7 @@ const EditorPane: Component = () => {
 
   const handlePlainInput = (event: Event) => {
     const target = event.currentTarget as HTMLTextAreaElement;
+    editorStore.signalUserEditIntent('plain-input');
     handleChange(target.value);
   };
 
@@ -158,6 +159,7 @@ const EditorPane: Component = () => {
       const next = value.slice(0, selectionStart) + value.slice(selectionEnd);
       target.value = next;
       target.setSelectionRange(selectionStart, selectionStart);
+      editorStore.signalUserEditIntent('delete-line-plain-selection');
       handleChange(next);
       return true;
     }
@@ -183,6 +185,7 @@ const EditorPane: Component = () => {
     const cursor = Math.min(lineStart, next.length);
     target.value = next;
     target.setSelectionRange(cursor, cursor);
+    editorStore.signalUserEditIntent('delete-line-plain');
     handleChange(next);
     return true;
   };
@@ -195,6 +198,7 @@ const EditorPane: Component = () => {
     if (!editor) {
       return false;
     }
+    editorStore.signalUserEditIntent('delete-line-shortcut');
     return deleteCurrentLine(editor);
   };
 
@@ -210,6 +214,7 @@ const EditorPane: Component = () => {
     if (typeof commands.toggleHeadingCollapse !== 'function') {
       return false;
     }
+    editorStore.signalUserEditIntent('toggle-heading-collapse-shortcut');
     const result = commands.toggleHeadingCollapse();
     if (result) {
       editor.commands.focus();
@@ -275,6 +280,7 @@ const EditorPane: Component = () => {
     const cursor = selectionStart + text.length;
     target.value = next;
     target.setSelectionRange(cursor, cursor);
+    editorStore.signalUserEditIntent('plain-paste-insert');
     handleChange(next);
     return true;
   };
@@ -367,6 +373,7 @@ const EditorPane: Component = () => {
       return false;
     }
     editor.commands.focus();
+    editorStore.signalUserEditIntent('rich-paste-insert');
     const tr = editor.state.tr.insertText(text);
     editor.view.dispatch(tr);
     editor.commands.focus();
