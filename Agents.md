@@ -6,7 +6,7 @@
 ## Release Workflow
 - All releases go through `./version-and-deploy.sh`. The user runs it; you only supply the exact answers they must type.
 - Prepare five prompts in advance: stage confirmation (`y` to stage everything), commit message (e.g. `chore: release 0.5.1`), next semantic tag, one-line tag description, and Markdown bullet release notes.
-- Hand these inputs to the user before they run the script so the deploy flow is deterministic. The script pushes the branch/tag and deploys via Cloudflare Pages automatically.
+- Hand these inputs to the user before they run the script so the deploy flow is deterministic. The script now syncs `package.json` version to the selected semantic tag, then pushes branch/tag and deploys via Cloudflare Pages automatically.
 
 ## Project Snapshot
 - **Stack**: SolidJS + Vite + CodeMirror 6; Markdown parsing with `markdown-it` in a Web Worker; DOMPurify for sanitisation; FlexSearch worker for indexing.

@@ -21,6 +21,60 @@ current_branch="$(git rev-parse --abbrev-ref HEAD)"
 bold "Installing dependencies..."
 npm install
 
+latest_tag="$(git tag --sort=-version:refname | head -n1 || true)"
+if [[ -z "${latest_tag}" ]]; then
+  latest_tag="0.0.0"
+fi
+
+bold "Latest tag: ${latest_tag}"
+
+suggested_tag=""
+if [[ "${latest_tag}" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+  major="${BASH_REMATCH[1]}"
+  minor="${BASH_REMATCH[2]}"
+  patch="${BASH_REMATCH[3]}"
+  suggested_tag="${major}.${minor}.$((patch + 1))"
+else
+  warn "Latest tag '${latest_tag}' is not semantic; enter the next tag manually."
+fi
+
+if [[ -n "${suggested_tag}" ]]; then
+  read -rp "Next tag [${suggested_tag}]: " new_tag
+  new_tag="${new_tag:-$suggested_tag}"
+else
+  read -rp "Next tag: " new_tag
+fi
+
+if [[ -z "${new_tag}" ]]; then
+  error "Tag cannot be empty."
+  exit 1
+fi
+
+if [[ ! "${new_tag}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+  error "Tag '${new_tag}' is not a valid semantic version (expected e.g. 0.5.2)."
+  exit 1
+fi
+
+if git rev-parse -q --verify "refs/tags/${new_tag}" >/dev/null; then
+  error "Tag '${new_tag}' already exists."
+  exit 1
+fi
+
+bold "About to release '${new_tag}' (previous latest was '${latest_tag}')."
+read -rp "Proceed? [y/N] " confirm_tag
+if [[ ! "$confirm_tag" =~ ^[Yy]$ ]]; then
+  error "Release aborted."
+  exit 1
+fi
+
+current_version="$(node -p "require('./package.json').version")"
+if [[ "${current_version}" != "${new_tag}" ]]; then
+  bold "Updating package version ${current_version} -> ${new_tag}..."
+  npm version "${new_tag}" --no-git-tag-version
+else
+  warn "package.json version already set to ${new_tag}; skipping version update."
+fi
+
 bold "Building project..."
 npm run build
 
@@ -54,42 +108,6 @@ else
 fi
 
 git push origin "${current_branch}"
-
-latest_tag="$(git tag --sort=-version:refname | head -n1 || true)"
-if [[ -z "${latest_tag}" ]]; then
-  latest_tag="0.0.0"
-fi
-
-bold "Latest tag: ${latest_tag}"
-
-suggested_tag=""
-if [[ "${latest_tag}" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-  major="${BASH_REMATCH[1]}"
-  minor="${BASH_REMATCH[2]}"
-  patch="${BASH_REMATCH[3]}"
-  suggested_tag="${major}.${minor}.$((patch + 1))"
-else
-  warn "Latest tag '${latest_tag}' is not semantic; enter the next tag manually."
-fi
-
-if [[ -n "${suggested_tag}" ]]; then
-  read -rp "Next tag [${suggested_tag}]: " new_tag
-  new_tag="${new_tag:-$suggested_tag}"
-else
-  read -rp "Next tag: " new_tag
-fi
-
-if [[ -z "${new_tag}" ]]; then
-  error "Tag cannot be empty."
-  exit 1
-fi
-
-bold "About to create tag '${new_tag}' (previous latest was '${latest_tag}')."
-read -rp "Proceed? [y/N] " confirm_tag
-if [[ ! "$confirm_tag" =~ ^[Yy]$ ]]; then
-  error "Tag creation aborted."
-  exit 1
-fi
 
 read -rp "Tag description (optional, single line): " tag_description
 
