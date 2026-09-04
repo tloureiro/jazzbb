@@ -1,6 +1,7 @@
 # Agent Notes
 
 ## Session Rituals
+- Use Node.js 22.12+ and `npm ci`; keep `package-lock.json` committed so installs preserve audited dependency versions. Run `npm run build` before Playwright, which serves `dist/`.
 - Run `npm run lint`, `npm run test -- --run`, and `npm run test:e2e` whenever code changes land. This is a hard requirement—treat it as part of “done” for every pull request. Vitest and Playwright bind to localhost; if a sandbox blocks them, call it out explicitly and rerun as soon as permissions allow.
 
 ## Release Workflow

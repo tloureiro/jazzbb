@@ -191,7 +191,7 @@ async function doubleClickHandle(page: Page, selector: string): Promise<void> {
   const centerX = box.x + box.width / 2;
   const centerY = box.y + box.height / 2;
   await page.mouse.move(centerX, centerY);
-  await page.mouse.click(centerX, centerY, { clickCount: 2, delay: 40 });
+  await page.mouse.click(centerX, centerY, { count: 2, delay: 40 });
 }
 
 const EDITING_SCENARIOS: EditingScenario[] = [
@@ -977,35 +977,45 @@ const EDITING_SCENARIOS: EditingScenario[] = [
       });
     },
     run: async (page) => {
-      await page.evaluate(() => {
+      await page.evaluate(async () => {
         const header = document.querySelector('.editor-pane .pane-header');
         const appHeader = document.querySelector('.app-header');
         if (!(header instanceof HTMLElement)) {
           throw new Error('Editor header missing');
         }
+        // Move past the pane's top padding before comparing sticky positions.
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        window.scrollTo(0, 200);
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        const scrollBefore = window.scrollY;
         const headerRect = header.getBoundingClientRect();
         const appRect = appHeader instanceof HTMLElement ? appHeader.getBoundingClientRect() : null;
         const gapBefore = headerRect.top - (appRect?.bottom ?? 0);
         window.scrollBy(0, 600);
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
         const afterRect = header.getBoundingClientRect();
         const appAfterRect = appHeader instanceof HTMLElement ? appHeader.getBoundingClientRect() : null;
         const gapAfter = afterRect.top - (appAfterRect?.bottom ?? 0);
-        window.scrollBy(0, -600);
+        const scrollDelta = window.scrollY - scrollBefore;
+        window.scrollTo(0, 0);
         (window as typeof window & {
-          __headerStickResult?: { before: number; after: number };
+          __headerStickResult?: { before: number; after: number; scrollDelta: number };
         }).__headerStickResult = {
           before: gapBefore,
           after: gapAfter,
+          scrollDelta,
         };
       });
     },
     assert: async (page) => {
       const result = await page.evaluate(() => {
         const runtime = window as typeof window & {
-          __headerStickResult?: { before: number; after: number };
+          __headerStickResult?: { before: number; after: number; scrollDelta: number };
         };
-        return runtime.__headerStickResult ?? { before: Infinity, after: Infinity };
+        return runtime.__headerStickResult ?? { before: Infinity, after: Infinity, scrollDelta: 0 };
       });
+      assert.ok(result.scrollDelta > 500, 'Expected the document to scroll while checking the sticky header');
+      assert.ok(Math.abs(result.after) < 2, `Editor header should sit below the top bar; gap ${result.after.toFixed(2)}px`);
       const delta = Math.abs(result.after - result.before);
       assert.ok(delta < 2, `Editor header should remain flush with top bar; gap delta ${delta.toFixed(2)}px`);
     },
@@ -1076,7 +1086,7 @@ export async function runEditingSuite(): Promise<void> {
 
   try {
     browser = await puppeteer.launch({
-      headless: 'new',
+      headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     page = await browser.newPage();

@@ -4,6 +4,9 @@
   "private": true,
   "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --project tsconfig.build.json && vite build",
@@ -85,7 +88,7 @@
     "jsdom": "^24.0.0",
     "playwright": "^1.44.0",
     "prettier": "^3.2.5",
-    "puppeteer": "^24.27.0",
+    "puppeteer": "^25.10.0",
     "tsx": "^4.20.6",
     "typescript": "^5.4.3",
     "vite": "^7.3.1",

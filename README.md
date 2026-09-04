@@ -35,14 +35,14 @@ Full macOS and Windows/Linux shortcut tables live in [`SHORTCUTS.md`](SHORTCUTS.
 
 ## Requirements
 
-- Node.js 18+ (project tested against Node 20).
-- npm (bundled with Node) or pnpm/yarn if preferred.
+- Node.js 22.12+.
+- npm (bundled with Node); use `npm ci` to install the audited versions in `package-lock.json`.
 - Chromium-based browser (Chrome/Edge/Brave) with File System Access API support for runtime usage. Firefox is currently not supported because the API is unavailable there.
 
 ## Getting Started
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -68,6 +68,9 @@ If you just want ready-made table snippets, `samples/markdown-table-examples.md`
 npm run test -- --run   # Vitest unit tests
 npm run test:puppeteer   # Puppeteer editing/formatting scenarios
 npm run lint            # ESLint + TypeScript checks
+npm run build           # TypeScript checks and production build for Playwright
+npm run test:e2e         # Playwright scenarios against the production build
+npm audit               # Check production and development dependencies
 ```
 
 > Vitest spins up a Vite socket on `127.0.0.1`; ensure your environment permits local binds.

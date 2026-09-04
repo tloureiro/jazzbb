@@ -3,6 +3,10 @@ import solid from 'vite-plugin-solid';
 
 export default defineConfig({
   plugins: [solid()],
+  optimizeDeps: {
+    // The search worker loads lazily; prebundle its dependency to avoid a mid-session reload.
+    include: ['flexsearch']
+  },
   server: {
     host: true,
     port: 5173
